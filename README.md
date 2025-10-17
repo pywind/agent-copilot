@@ -32,6 +32,24 @@ ChatGPT Copilot is a powerful and telemetry-free extension for Visual Studio Cod
 - ➕ Editable Prompts: Edit and resend previous prompts.
 - 🛡️ Telemetry Free: No usage data is collected.
 
+## Chat Modes
+
+Chat offers specialized modes so you can choose the right workflow for every task. Pick a mode from the dropdown at the top of the chat panel, press <kbd>Ctrl</kbd>+<kbd>.</kbd> to cycle quickly, or customize shortcuts from the extension settings.
+
+| Mode  | Best for                            | Architecture & Capabilities                                                                                 | Tool Access                |
+| ----- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------- |
+| Agent | Complex changes and refactoring     | Iterative plan-act-observe loop (ReAct-style) that searches the repo, proposes diffs, and runs commands/tests | All tools enabled          |
+| Ask   | Learning and investigation          | Read-only exploration of the workspace without modifying files                                              | Search and read-only tools |
+| Plan  | Large or multi-step implementations | ReWOO-style planning that researches context, asks clarifiers, and drafts a multi-step plan for later execution | All tools enabled          |
+
+### How each mode works
+
+- **Agent Mode** – The autonomous controller continuously decides which tool to call next (search, edit, or run). It surfaces proposed diffs for approval and can execute shell commands or tests, making it ideal for end-to-end feature work.
+- **Ask Mode** – Keeps the workspace unchanged while the assistant answers questions. Use it to understand code, explore APIs, or gather references safely.
+- **Plan Mode** – Activates a dedicated planner that gathers context, asks follow-up questions, and produces an editable plan before any edits occur. Once approved, the plan can be executed by Agent Mode or adapted manually.
+
+> 💡 **Tip:** Understanding how each mode reasons—and when it will edit files versus only observing—helps you pick the most effective workflow before you start a session.
+
 ## Recent Release Highlights
 
 - **v4.10**: Add Claude Code provider.

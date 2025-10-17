@@ -45,7 +45,14 @@ import { MCPServer } from "./mcp-server-provider";
 import { ModelConfig } from "./model-config";
 import { chatGpt, initGptModel } from "./openai";
 import { chatCompletion, initGptLegacyModel } from "./openai-legacy";
-import { PromptStore } from "./types";
+import {
+  CHAT_MODE_DEFINITIONS,
+  CHAT_MODE_SEQUENCE,
+  ChatMode,
+  PromptStore,
+  isChatMode,
+} from "./types";
+import { planModeChat } from "./plan-mode";
 
 // Temporary compatibility type to handle LanguageModelV1 and LanguageModelV2
 type CompatibleLanguageModel =
@@ -64,6 +71,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
   public subscribeToResponse: boolean;
   public autoScroll: boolean;
   public provider: string = "Auto";
+  public chatMode: ChatMode;
   public model?: string;
   public reasoningEffort: string = "high";
   public maxSteps: number = 0;
@@ -156,6 +164,9 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     if (this.apiBaseUrl?.includes("azure")) {
       this.model = this.model?.replace(".", "");
     }
+
+    const storedMode = this.context.globalState.get<string>("chatMode");
+    this.chatMode = isChatMode(storedMode) ? storedMode : "agent";
   }
 
   public async closeMCPServers(): Promise<void> {
@@ -165,6 +176,71 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
       }
     }
     this.toolSet = undefined;
+  }
+
+  public async setChatMode(mode: ChatMode): Promise<void> {
+    if (this.chatMode === mode) {
+      this.sendModeState();
+      return;
+    }
+
+    const previousMode = this.chatMode;
+    this.chatMode = mode;
+    await this.context.globalState.update("chatMode", mode);
+
+    if (previousMode === "agent" && mode !== "agent" && this.toolSet) {
+      await this.closeMCPServers();
+    }
+
+    if (this.inProgress) {
+      this.stopGenerating();
+    }
+
+    this.resetConversationState(true);
+    this.sendModeState();
+    this.logEvent("mode-changed", { previousMode, mode });
+  }
+
+  public async cycleChatMode(): Promise<void> {
+    const currentIndex = CHAT_MODE_SEQUENCE.indexOf(this.chatMode);
+    const nextIndex = (currentIndex + 1) % CHAT_MODE_SEQUENCE.length;
+    await this.setChatMode(CHAT_MODE_SEQUENCE[nextIndex]);
+  }
+
+  private resetConversationState(resetUI = true) {
+    this.conversationId = undefined;
+    this.claudeCodeSessionId = undefined;
+    this.chatHistory = [];
+    this.conversationContext = {
+      files: {},
+      filesSent: false,
+    };
+    this.reasoning = "";
+    this.response = "";
+    this.reasoningRounds.clear();
+    this.contentSequence = 0;
+
+    if (resetUI) {
+      this.sendMessage({ type: "clearConversation" });
+    }
+    this.sendMessage({ type: "clearFileReferences" });
+  }
+
+  private sendModeState() {
+    const definition = CHAT_MODE_DEFINITIONS[this.chatMode];
+    this.sendMessage({
+      type: "modeState",
+      mode: this.chatMode,
+      definition,
+      availableModes: CHAT_MODE_SEQUENCE.map((mode) => ({
+        mode,
+        definition: CHAT_MODE_DEFINITIONS[mode],
+      })),
+    });
+  }
+
+  private modeAllowsEdits(): boolean {
+    return CHAT_MODE_DEFINITIONS[this.chatMode].allowsEdits;
   }
 
   public resolveWebviewView(
@@ -186,7 +262,36 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
         case "addFreeTextQuestion":
           this.sendApiRequest(data.value, { command: "freeText" });
           break;
+        case "setChatMode":
+          if (isChatMode(data.value)) {
+            await this.setChatMode(data.value);
+          }
+          break;
+        case "modeActionDenied":
+          this.logEvent("mode-action-denied", {
+            action: data?.action,
+            mode: this.chatMode,
+          });
+          {
+            const requestedAction = data?.action
+              ? `${data.action}`
+              : "perform this action";
+            vscode.window.showInformationMessage(
+              `Switch to Agent mode to ${requestedAction}.`,
+            );
+          }
+          break;
         case "editCode":
+          if (!this.modeAllowsEdits()) {
+            this.logEvent("mode-action-blocked", {
+              action: "editCode",
+              mode: this.chatMode,
+            });
+            vscode.window.showInformationMessage(
+              "Switch to Agent mode to insert code into the workspace.",
+            );
+            break;
+          }
           const escapedString = (data.value as string).replace(/\$/g, "\\$");
           vscode.window.activeTextEditor?.insertSnippet(
             new vscode.SnippetString(escapedString),
@@ -195,6 +300,16 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
           this.logEvent("code-inserted");
           break;
         case "newCode":
+          if (!this.modeAllowsEdits()) {
+            this.logEvent("mode-action-blocked", {
+              action: "newCode",
+              mode: this.chatMode,
+            });
+            vscode.window.showInformationMessage(
+              "Switch to Agent mode to create new files from responses.",
+            );
+            break;
+          }
           const newDocument = await vscode.workspace.openTextDocument({
             content: data.value,
             language: this.detectLanguageFromCode(data.value),
@@ -204,6 +319,16 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
           this.logEvent("code-opened");
           break;
         case "openNew":
+          if (!this.modeAllowsEdits()) {
+            this.logEvent("mode-action-blocked", {
+              action: "openNew",
+              mode: this.chatMode,
+            });
+            vscode.window.showInformationMessage(
+              "Switch to Agent mode to open generated code in a new file.",
+            );
+            break;
+          }
           const document = await vscode.workspace.openTextDocument({
             content: data.value,
             language: data.language,
@@ -223,21 +348,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
           this.logEvent("conversation-exported");
           break;
         case "clearConversation":
-          this.conversationId = undefined;
-          this.claudeCodeSessionId = undefined;
-          this.chatHistory = [];
-          this.conversationContext = {
-            files: {},
-            filesSent: false,
-          };
-          // Clear reasoning-related state
-          this.reasoning = "";
-          this.response = "";
-          this.reasoningRounds.clear();
-          this.contentSequence = 0;
-          this.sendMessage({
-            type: "clearFileReferences",
-          });
+          this.resetConversationState(false);
           this.logEvent("conversation-cleared");
           break;
         case "clearBrowser":
@@ -353,6 +464,8 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
           break;
       }
     });
+
+    this.sendModeState();
 
     if (this.leftOverMessage != null) {
       // If there were any messages that wasn't delivered, render after resolveWebView is called.
@@ -646,7 +759,11 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
 
     // Only log and initialize MCP servers if configuration has changed and provider is not ClaudeCode
     // Claude Code has its own built-in MCP support, so we skip external MCP server initialization
-    if (enabledServers.length > 0 && this.aiProvider !== "ClaudeCode") {
+    if (
+      this.chatMode === "agent" &&
+      enabledServers.length > 0 &&
+      this.aiProvider !== "ClaudeCode"
+    ) {
       const needsReinitialization =
         !this.toolSet ||
         Object.keys(this.toolSet.clients).length !== enabledServers.length ||
@@ -726,7 +843,11 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
       }
     } else if (
       this.toolSet &&
-      (enabledServers.length === 0 || this.aiProvider === "ClaudeCode")
+      (
+        enabledServers.length === 0 ||
+        this.aiProvider === "ClaudeCode" ||
+        this.chatMode !== "agent"
+      )
     ) {
       // No enabled servers or using ClaudeCode provider - close any existing MCP connections
       // ClaudeCode has its own built-in MCP support and doesn't need external MCP servers
@@ -1029,6 +1150,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     }
 
     this.response = "";
+    this.reasoning = "";
     let question = this.processQuestion(prompt, options.code, options.language);
 
     // If the ChatGPT view is not in focus/visible; focus on it to render Q&A
@@ -1126,7 +1248,16 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
         this.conversationContext.filesSent = true;
       }
 
-      if (this.provider == "OpenAILegacy") {
+      if (this.chatMode === "plan") {
+        await planModeChat(
+          this,
+          question,
+          imageFiles,
+          startResponse,
+          updateResponse,
+          updateReasoning,
+        );
+      } else if (this.provider == "OpenAILegacy") {
         await chatCompletion(
           this,
           question,
@@ -1168,6 +1299,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
           configuration.get("promptBasedTools.enabled") || false;
 
         if (
+          this.chatMode === "agent" &&
           promptBasedToolsEnabled &&
           this.toolSet &&
           Object.keys(this.toolSet.tools).length > 0
@@ -1496,12 +1628,25 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
 							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15m0 0L7.5 12m4.5 4.5V3" /></svg>Stop responding</button>
 					</div>
 
-					<div class="modern-input-container" role="region" aria-label="Chat input area">
-						<div class="modern-input-wrapper">
-							<div class="modern-input-inner">
-								<div id="file-references" class="file-references-modern" role="list" aria-label="Attached files" aria-live="polite"></div>
-								<div class="modern-textarea-area">
-									<textarea
+                                        <div class="modern-input-container" role="region" aria-label="Chat input area">
+                                                <div class="mode-picker-banner" role="group" aria-label="Chat mode selector">
+                                                        <div class="mode-picker-header">
+                                                                <label for="mode-picker" class="mode-picker-label">Mode</label>
+                                                                <select id="mode-picker" class="mode-picker-select" aria-describedby="mode-description mode-warning">
+                                                                        <option value="agent">Agent</option>
+                                                                        <option value="ask">Ask</option>
+                                                                        <option value="plan">Plan</option>
+                                                                </select>
+                                                        </div>
+                                                        <p id="mode-active-label" class="mode-active-label" aria-live="polite">Agent</p>
+                                                        <p id="mode-description" class="mode-description">Iterative plan-act workflow with full tool access, workspace edits, and command execution.</p>
+                                                        <p id="mode-warning" class="mode-warning hidden" role="status">Read-only mode: editing actions are disabled.</p>
+                                                </div>
+                                                <div class="modern-input-wrapper">
+                                                        <div class="modern-input-inner">
+                                                                <div id="file-references" class="file-references-modern" role="list" aria-label="Attached files" aria-live="polite"></div>
+                                                                <div class="modern-textarea-area">
+                                                                        <textarea
 										type="text"
 										rows="1"
 										id="question-input"

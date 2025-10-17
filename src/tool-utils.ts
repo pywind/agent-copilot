@@ -20,6 +20,10 @@ import { logger } from "./logger";
  * @returns The tools object with web search tools added if applicable
  */
 export function getToolsWithWebSearch(provider: ChatGptViewProvider): any {
+  if (provider.chatMode !== "agent") {
+    return undefined;
+  }
+
   let tools = provider.toolSet?.tools;
 
   // Add web search tools for Google Gemini and Anthropic Claude when searchGrounding is enabled

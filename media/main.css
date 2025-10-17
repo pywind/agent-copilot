@@ -1117,6 +1117,68 @@ tool-result {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', Inter, system-ui, -apple-system, sans-serif;
 }
 
+.mode-picker-banner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    border-radius: 1rem;
+    border: 1px solid var(--vscode-editorWidget-border, rgba(255, 255, 255, 0.08));
+    background: var(--vscode-editorWidget-background, rgba(255, 255, 255, 0.04));
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.mode-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.mode-picker-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground, rgba(255, 255, 255, 0.6));
+}
+
+.mode-picker-select {
+    border-radius: 0.75rem;
+    border: 1px solid var(--vscode-input-border, rgba(255, 255, 255, 0.12));
+    background: var(--vscode-input-background, rgba(255, 255, 255, 0.04));
+    color: var(--vscode-foreground);
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-width: 7rem;
+}
+
+.mode-picker-select:focus {
+    outline: 2px solid var(--vscode-focusBorder);
+    outline-offset: 2px;
+}
+
+.mode-active-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--vscode-foreground);
+}
+
+.mode-description {
+    font-size: 0.8rem;
+    color: var(--vscode-descriptionForeground, rgba(255, 255, 255, 0.7));
+    line-height: 1.3;
+}
+
+.mode-warning {
+    font-size: 0.75rem;
+    color: var(--vscode-notificationsWarningIcon-foreground, #f1c21b);
+    background-color: rgba(241, 194, 27, 0.12);
+    border-radius: 0.65rem;
+    padding: 0.4rem 0.6rem;
+}
+
 .modern-input-wrapper {
     position: relative;
     display: flex;
