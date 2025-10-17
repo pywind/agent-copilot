@@ -185,6 +185,12 @@
         "key": "ctrl+k ctrl+shift+9",
         "mac": "cmd+k cmd+shift+9",
         "when": "editorHasSelection"
+      },
+      {
+        "command": "chatgpt-copilot.cycleChatMode",
+        "key": "ctrl+.",
+        "mac": "cmd+.",
+        "when": "view == chatgpt-copilot.view"
       }
     ],
     "commands": [
@@ -285,6 +291,22 @@
         "command": "chatgpt-copilot.openSettings",
         "title": "ChatGPT: Open Settings",
         "icon": "$(gear)"
+      },
+      {
+        "command": "chatgpt-copilot.setMode.agent",
+        "title": "ChatGPT: Switch to Agent Mode"
+      },
+      {
+        "command": "chatgpt-copilot.setMode.ask",
+        "title": "ChatGPT: Switch to Ask Mode"
+      },
+      {
+        "command": "chatgpt-copilot.setMode.plan",
+        "title": "ChatGPT: Switch to Plan Mode"
+      },
+      {
+        "command": "chatgpt-copilot.cycleChatMode",
+        "title": "ChatGPT: Cycle Chat Mode"
       }
     ],
     "viewsContainers": {

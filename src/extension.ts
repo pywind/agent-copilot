@@ -372,6 +372,26 @@ export async function activate(context: vscode.ExtensionContext) {
     },
   );
 
+  const setAgentMode = vscode.commands.registerCommand(
+    "chatgpt-copilot.setMode.agent",
+    () => provider.setChatMode("agent"),
+  );
+
+  const setAskMode = vscode.commands.registerCommand(
+    "chatgpt-copilot.setMode.ask",
+    () => provider.setChatMode("ask"),
+  );
+
+  const setPlanMode = vscode.commands.registerCommand(
+    "chatgpt-copilot.setMode.plan",
+    () => provider.setChatMode("plan"),
+  );
+
+  const cycleMode = vscode.commands.registerCommand(
+    "chatgpt-copilot.cycleChatMode",
+    () => provider.cycleChatMode(),
+  );
+
   context.subscriptions.push(
     view,
     freeText,
@@ -390,6 +410,10 @@ export async function activate(context: vscode.ExtensionContext) {
     mcpServerView,
     openMCPServers,
     openSettings,
+    setAgentMode,
+    setAskMode,
+    setPlanMode,
+    cycleMode,
   );
 
   const setContext = () => {
