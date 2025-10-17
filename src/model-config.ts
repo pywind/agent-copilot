@@ -27,6 +27,10 @@ export class ModelConfig {
   public isReasoning: boolean;
   public claudeCodePath: string;
   public enabledMCPServers: MCPServer[];
+  public verifySsl: boolean;
+  public proxyUrl: string;
+  public proxyUsername: string;
+  public proxyPassword: string;
 
   constructor({
     provider,
@@ -43,6 +47,10 @@ export class ModelConfig {
     isReasoning,
     claudeCodePath,
     enabledMCPServers,
+    verifySsl,
+    proxyUrl,
+    proxyUsername,
+    proxyPassword,
   }: {
     provider: string;
     apiKey: string;
@@ -58,6 +66,10 @@ export class ModelConfig {
     isReasoning?: boolean;
     claudeCodePath?: string;
     enabledMCPServers?: MCPServer[];
+    verifySsl?: boolean;
+    proxyUrl?: string;
+    proxyUsername?: string;
+    proxyPassword?: string;
   }) {
     this.provider = provider;
     this.apiKey = apiKey;
@@ -73,6 +85,10 @@ export class ModelConfig {
     this.isReasoning = isReasoning ?? false;
     this.claudeCodePath = claudeCodePath ?? "";
     this.enabledMCPServers = enabledMCPServers ?? [];
+    this.verifySsl = verifySsl ?? true;
+    this.proxyUrl = proxyUrl ?? "";
+    this.proxyUsername = proxyUsername ?? "";
+    this.proxyPassword = proxyPassword ?? "";
   }
 }
 

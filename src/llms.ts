@@ -27,6 +27,7 @@ import * as vscode from "vscode";
 import ChatGptViewProvider from "./chatgpt-view-provider";
 import { logger } from "./logger";
 import { ModelConfig } from "./model-config";
+import { createFetchWithNetworkOptions } from "./network";
 import { isReasoningModel } from "./types";
 
 // initClaudeCodeModel initializes the Claude Code model with the given parameters.
@@ -66,9 +67,11 @@ export async function initClaudeModel(
     apiBaseUrl = "https://api.anthropic.com/v1";
   }
 
+  const fetchFn = createFetchWithNetworkOptions(config);
   const ai = createAnthropic({
     baseURL: apiBaseUrl,
     apiKey: config.apiKey,
+    ...(fetchFn ? { fetch: fetchFn } : {}),
   });
   if (config.isReasoning) {
     viewProvider.apiReasoning = wrapLanguageModel({
@@ -96,9 +99,11 @@ export async function initGeminiModel(
     apiBaseUrl = "https://generativelanguage.googleapis.com/v1beta";
   }
 
+  const fetchFn = createFetchWithNetworkOptions(config);
   let ai = createGoogleGenerativeAI({
     baseURL: apiBaseUrl,
     apiKey: config.apiKey,
+    ...(fetchFn ? { fetch: fetchFn } : {}),
   });
 
   if (config.isReasoning) {
@@ -134,8 +139,10 @@ export async function initOllamaModel(
     apiBaseUrl = "http://localhost:11434/api";
   }
 
+  const fetchFn = createFetchWithNetworkOptions(config);
   const ai = createOllama({
     baseURL: apiBaseUrl,
+    ...(fetchFn ? { fetch: fetchFn } : {}),
   });
 
   if (config.isReasoning) {
@@ -168,9 +175,11 @@ export async function initMistralModel(
     apiBaseUrl = "https://api.mistral.ai/v1";
   }
 
+  const fetchFn = createFetchWithNetworkOptions(config);
   const ai = createMistral({
     baseURL: apiBaseUrl,
     apiKey: config.apiKey,
+    ...(fetchFn ? { fetch: fetchFn } : {}),
   });
 
   if (config.isReasoning) {
@@ -207,9 +216,11 @@ export async function initXAIModel(
     apiBaseUrl = `${apiBaseUrl}/v1`;
   }
 
+  const fetchFn = createFetchWithNetworkOptions(config);
   const ai = createXai({
     baseURL: apiBaseUrl,
     apiKey: config.apiKey,
+    ...(fetchFn ? { fetch: fetchFn } : {}),
   });
   if (config.isReasoning) {
     viewProvider.apiReasoning = wrapLanguageModel({
@@ -234,9 +245,11 @@ export async function initTogetherModel(
     apiBaseUrl = "https://api.together.xyz/v1";
   }
 
+  const fetchFn = createFetchWithNetworkOptions(config);
   const ai = createTogetherAI({
     apiKey: config.apiKey,
     baseURL: apiBaseUrl,
+    ...(fetchFn ? { fetch: fetchFn } : {}),
   });
 
   if (config.isReasoning) {
@@ -273,9 +286,11 @@ export async function initDeepSeekModel(
     apiBaseUrl = "https://api.deepseek.com/v1";
   }
 
+  const fetchFn = createFetchWithNetworkOptions(config);
   const ai = createDeepSeek({
     apiKey: config.apiKey,
     baseURL: apiBaseUrl,
+    ...(fetchFn ? { fetch: fetchFn } : {}),
   });
 
   if (config.isReasoning) {
@@ -310,9 +325,11 @@ export async function initGroqModel(
     apiBaseUrl = "https://api.groq.com/openai/v1";
   }
 
+  const fetchFn = createFetchWithNetworkOptions(config);
   const ai = createGroq({
     apiKey: config.apiKey,
     baseURL: apiBaseUrl,
+    ...(fetchFn ? { fetch: fetchFn } : {}),
   });
 
   if (config.isReasoning) {
@@ -346,9 +363,11 @@ export async function initPerplexityModel(
     apiBaseUrl = "https://api.perplexity.ai";
   }
 
+  const fetchFn = createFetchWithNetworkOptions(config);
   const ai = createPerplexity({
     apiKey: config.apiKey,
     baseURL: apiBaseUrl,
+    ...(fetchFn ? { fetch: fetchFn } : {}),
   });
 
   viewProvider.apiChat = ai.languageModel(
@@ -360,8 +379,10 @@ export async function initOpenRouterModel(
   viewProvider: ChatGptViewProvider,
   config: ModelConfig,
 ) {
+  const fetchFn = createFetchWithNetworkOptions(config);
   const ai = createOpenRouter({
     apiKey: config.apiKey,
+    ...(fetchFn ? { fetch: fetchFn } : {}),
   });
 
   if (config.isReasoning) {
@@ -396,9 +417,11 @@ export async function initAzureAIModel(
   const azureAPIVersion = "2025-04-01-preview";
   let apiBaseUrl = config.apiBaseUrl;
 
+  const fetchFn = createFetchWithNetworkOptions(config);
   const ai = createAzure({
     apiKey: config.apiKey,
     endpoint: apiBaseUrl,
+    ...(fetchFn ? { fetch: fetchFn } : {}),
     // apiVersion: azureAPIVersion,
   });
 
@@ -434,9 +457,11 @@ export async function initReplicateModel(
     apiBaseUrl = "https://api.replicate.com/v1";
   }
 
+  const fetchFn = createFetchWithNetworkOptions(config);
   const ai = createReplicate({
     apiToken: config.apiKey,
     baseURL: apiBaseUrl,
+    ...(fetchFn ? { fetch: fetchFn } : {}),
   });
 
   if (config.isReasoning) {
