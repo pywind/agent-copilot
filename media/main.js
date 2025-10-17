@@ -68,6 +68,162 @@
     window.modeDefinitions = window.modeDefinitions || {};
     window.availableModes = window.availableModes || [];
     window.pendingModeState = window.pendingModeState || null;
+    window.currentPlanSession = window.currentPlanSession || null;
+
+    const PLAN_STATUS_LABELS = {
+        orchestrating: "Assessing requirements",
+        awaiting_clarifications: "Waiting for clarifications",
+        planning: "Drafting plan",
+        executing_tools: "Gathering context",
+        solving: "Synthesizing answer",
+        completed: "Plan ready",
+    };
+
+    function escapeHtml(unsafe = "") {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function formatPlanPath(pathValue) {
+        if (!pathValue) {
+            return "";
+        }
+        const parts = pathValue.split(/[\\\/]/).filter(Boolean);
+        if (parts.length <= 2) {
+            return pathValue;
+        }
+        return `…/${parts.slice(-2).join('/')}`;
+    }
+
+    function updatePlanPanelVisibility() {
+        const panel = document.getElementById('plan-session-panel');
+        if (!panel) {
+            return;
+        }
+        const shouldShow = window.chatMode === 'plan' && window.currentPlanSession;
+        panel.classList.toggle('hidden', !shouldShow);
+    }
+
+    function renderPlanSession(session) {
+        const panel = document.getElementById('plan-session-panel');
+        if (!panel) {
+            return;
+        }
+
+        if (!session) {
+            window.currentPlanSession = null;
+            panel.innerHTML = '';
+            updatePlanPanelVisibility();
+            return;
+        }
+
+        window.currentPlanSession = session;
+
+        const statusLabel = PLAN_STATUS_LABELS[session.status] || session.status;
+        const statusClass = `plan-status plan-status-${session.status}`;
+
+        const clarifications = Array.isArray(session.clarifications)
+            ? session.clarifications
+            : [];
+        const toolExecutions = Array.isArray(session.toolExecutions)
+            ? session.toolExecutions
+            : [];
+
+        const clarificationsHtml = clarifications.length
+            ? `<ol class="plan-clarifications">${clarifications
+                  .map(
+                      (item) =>
+                          `<li><p class="plan-clar-question">${escapeHtml(item.question)}</p><p class="plan-clar-answer">${escapeHtml(item.answer)}</p></li>`,
+                  )
+                  .join('')}</ol>`
+            : '<p class="plan-empty">No clarifications collected yet.</p>';
+
+        const planHtml = session.planMarkdown
+            ? `<div class="plan-markdown">${marked.parse(session.planMarkdown)}</div>`
+            : '<p class="plan-empty">Plan draft has not been generated yet.</p>';
+
+        const solverHtml = session.solverSummary
+            ? `<div class="plan-solver">${marked.parse(session.solverSummary)}</div>`
+            : '<p class="plan-empty">Solver summary pending.</p>';
+
+        const toolHtml = toolExecutions.length
+            ? toolExecutions
+                  .map((execution) => {
+                      const argument = escapeHtml(execution.argument || '');
+                      const toolName = escapeHtml(execution.tool || 'Tool');
+                      const stepId = escapeHtml(execution.id || 'Step');
+                      if (execution.error) {
+                          return `<div class="plan-tool-entry"><div class="plan-tool-meta"><strong>${stepId}</strong><span>${toolName}</span><code>${argument}</code></div><p class="plan-tool-error">${escapeHtml(execution.error)}</p></div>`;
+                      }
+
+                      const output = (execution.output || '').slice(0, 1000);
+                      const truncated = execution.output && execution.output.length > 1000;
+                      return `<div class="plan-tool-entry"><div class="plan-tool-meta"><strong>${stepId}</strong><span>${toolName}</span><code>${argument}</code></div><pre class="plan-tool-output">${escapeHtml(output)}</pre>${
+                          truncated
+                              ? '<p class="plan-note">Output truncated for display.</p>'
+                              : ''
+                      }</div>`;
+                  })
+                  .join('')
+            : '<p class="plan-empty">No tool observations yet.</p>';
+
+        const pendingNotice = session.pendingClarification
+            ? `<div class="plan-alert">Waiting for clarification: ${escapeHtml(
+                  session.pendingClarification,
+              )}</div>`
+            : '';
+
+        const planActions = session.planFilePath
+            ? `<div class="plan-file-actions"><button type="button" class="modern-button plan-open-button" data-plan-path="${escapeHtml(
+                  session.planFilePath,
+              )}">Open plan file</button><span class="plan-file-path" title="${escapeHtml(
+                  session.planFilePath,
+              )}">${escapeHtml(formatPlanPath(session.planFilePath))}</span></div>`
+            : '<p class="plan-file-path">Plan will be saved once a workspace folder is available.</p>';
+
+        panel.innerHTML = `
+            <div class="plan-session-header">
+                <div>
+                    <h3 class="plan-session-title">Current Plan</h3>
+                    <p class="${statusClass}">${escapeHtml(statusLabel)}</p>
+                </div>
+                ${planActions}
+            </div>
+            ${pendingNotice}
+            <div class="plan-section">
+                <h4>Clarifications</h4>
+                ${clarificationsHtml}
+            </div>
+            <div class="plan-section">
+                <h4>Plan Draft</h4>
+                ${planHtml}
+            </div>
+            <div class="plan-section">
+                <h4>Tool Observations</h4>
+                ${toolHtml}
+            </div>
+            <div class="plan-section">
+                <h4>Solver Summary</h4>
+                ${solverHtml}
+            </div>
+        `;
+
+        const openButton = panel.querySelector('.plan-open-button');
+        if (openButton) {
+            openButton.addEventListener('click', () => {
+                const planPath = openButton.getAttribute('data-plan-path');
+                if (planPath) {
+                    vscode.postMessage({ type: 'openPlanDocument', path: planPath });
+                }
+            });
+        }
+
+        updatePlanPanelVisibility();
+    }
 
     function applyModeState(modeState) {
         if (!modeState) {
@@ -147,6 +303,8 @@
         if (window.buttonStateManager) {
             window.buttonStateManager.updateAllButtonStates();
         }
+
+        updatePlanPanelVisibility();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -170,6 +328,12 @@
                 definition: window.modeDefinitions[window.chatMode],
                 availableModes: window.availableModes,
             });
+        }
+
+        if (window.currentPlanSession) {
+            renderPlanSession(window.currentPlanSession);
+        } else {
+            updatePlanPanelVisibility();
         }
     });
 
@@ -365,14 +529,13 @@
             case "modeState":
                 applyModeState(message);
                 break;
+            case "planSessionUpdate":
+                renderPlanSession(message.session || null);
+                break;
             case "addQuestion":
                 list.classList.remove("hidden");
                 document.getElementById("introduction")?.classList?.add("hidden");
                 document.getElementById("conversation-list").classList.add("hidden");
-
-                const escapeHtml = (unsafe) => {
-                    return unsafe.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
-                };
 
                 list.innerHTML +=
                     `<div class="p-4 self-end mt-4 question-element-ext relative input-background">

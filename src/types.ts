@@ -20,6 +20,8 @@ export interface PromptStore {
   prompts: Prompt[];
 }
 
+import type { ModelMessage } from "ai";
+
 export type ChatMode = "agent" | "ask" | "plan";
 
 export interface ChatModeDefinition {
@@ -82,6 +84,42 @@ export function isReasoningModel(model: string) {
     m.includes("claude-3-7") ||
     m.includes("qwen3")
   );
+}
+
+export type PlanSessionStatus =
+  | "orchestrating"
+  | "awaiting_clarifications"
+  | "planning"
+  | "executing_tools"
+  | "solving"
+  | "completed";
+
+export interface PlanClarification {
+  question: string;
+  answer: string;
+}
+
+export interface PlanToolExecution {
+  id: string;
+  tool: string;
+  argument: string;
+  output: string;
+  error?: string;
+}
+
+export interface PlanSession {
+  id: string;
+  createdAt: number;
+  task: string;
+  taskHistory: string[];
+  status: PlanSessionStatus;
+  clarifications: PlanClarification[];
+  pendingClarification?: string;
+  planMarkdown?: string;
+  solverSummary?: string;
+  toolExecutions: PlanToolExecution[];
+  planFilePath?: string;
+  orchestratorMessages: ModelMessage[];
 }
 
 // Prompt-based tool call types

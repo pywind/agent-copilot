@@ -20,6 +20,7 @@ import {
 import { LanguageModel as LanguageModelV2, ModelMessage } from "ai";
 import delay from "delay";
 import path from "path";
+import { promises as fs } from "fs";
 import * as vscode from "vscode";
 import { chatClaudeCode } from "./claude-code";
 import { reasoningChat } from "./deepclaude";
@@ -49,6 +50,7 @@ import {
   CHAT_MODE_DEFINITIONS,
   CHAT_MODE_SEQUENCE,
   ChatMode,
+  PlanSession,
   PromptStore,
   isChatMode,
 } from "./types";
@@ -100,6 +102,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
   public contentSequence: number = 0; // Sequence counter for ordering content
   public claudeCodePath: string = "";
   public claudeCodeSessionId?: string;
+  public planSession?: PlanSession;
   /**
    * Message to be rendered lazily if they haven't been rendered
    * in time before resolveWebviewView is called.
@@ -219,11 +222,131 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     this.response = "";
     this.reasoningRounds.clear();
     this.contentSequence = 0;
+    this.clearPlanSession(resetUI);
 
     if (resetUI) {
       this.sendMessage({ type: "clearConversation" });
     }
     this.sendMessage({ type: "clearFileReferences" });
+  }
+
+  public clearPlanSession(_notify = true) {
+    if (this.planSession) {
+      this.planSession = undefined;
+    }
+
+    this.sendPlanSessionUpdate(undefined);
+  }
+
+  public startPlanSession(initialTask: string): PlanSession {
+    const session: PlanSession = {
+      id: this.getRandomId(),
+      createdAt: Date.now(),
+      task: initialTask,
+      taskHistory: [initialTask],
+      status: "orchestrating",
+      clarifications: [],
+      toolExecutions: [],
+      orchestratorMessages: [],
+    };
+
+    this.planSession = session;
+    this.sendPlanSessionUpdate(session);
+    return session;
+  }
+
+  public sendPlanSessionUpdate(session?: PlanSession) {
+    const planPayload = session
+      ? {
+          id: session.id,
+          createdAt: session.createdAt,
+          task: session.task,
+          status: session.status,
+          clarifications: session.clarifications,
+          pendingClarification: session.pendingClarification,
+          planMarkdown: session.planMarkdown,
+          solverSummary: session.solverSummary,
+          toolExecutions: session.toolExecutions,
+          planFilePath: session.planFilePath,
+        }
+      : undefined;
+
+    this.sendMessage({
+      type: "planSessionUpdate",
+      session: planPayload,
+    });
+  }
+
+  private async ensurePlanDirectory(): Promise<string | undefined> {
+    const [workspaceFolder] = vscode.workspace.workspaceFolders || [];
+
+    if (!workspaceFolder) {
+      vscode.window.showWarningMessage(
+        "Open a workspace folder to persist plans generated in Plan Mode.",
+      );
+      return undefined;
+    }
+
+    const planDirectory = path.join(workspaceFolder.uri.fsPath, ".plans");
+    await fs.mkdir(planDirectory, { recursive: true });
+    return planDirectory;
+  }
+
+  public resolveWorkspacePath(targetPath: string): string | undefined {
+    const [workspaceFolder] = vscode.workspace.workspaceFolders || [];
+    if (!workspaceFolder) {
+      return undefined;
+    }
+
+    const workspaceRoot = path.resolve(workspaceFolder.uri.fsPath);
+    const candidate = path.resolve(
+      workspaceRoot,
+      targetPath.startsWith(".") || targetPath.startsWith("/")
+        ? targetPath
+        : `./${targetPath}`,
+    );
+
+    if (!candidate.startsWith(workspaceRoot)) {
+      return undefined;
+    }
+
+    return candidate;
+  }
+
+  public async persistPlanContent(
+    session: PlanSession,
+    content: string,
+  ): Promise<void> {
+    const directory = await this.ensurePlanDirectory();
+    if (!directory) {
+      return;
+    }
+
+    const timestamp = new Date();
+    const fileTimestamp = `${timestamp
+      .toISOString()
+      .replace(/[-:TZ]/g, "")
+      .replace(".", "")}`;
+
+    const slug = session.task
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 32);
+
+    const fileName = slug
+      ? `plan-${fileTimestamp}-${slug}.md`
+      : `plan-${fileTimestamp}.md`;
+
+    const planPath = path.join(directory, fileName);
+    await fs.writeFile(planPath, content, "utf8");
+
+    session.planFilePath = planPath;
+    this.sendPlanSessionUpdate(session);
+
+    const planUri = vscode.Uri.file(planPath);
+    const document = await vscode.workspace.openTextDocument(planUri);
+    await vscode.window.showTextDocument(document, { preview: false });
   }
 
   private sendModeState() {
@@ -396,6 +519,22 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
           );
 
           this.logEvent("settings-prompt-opened");
+          break;
+        case "openPlanDocument":
+          if (typeof data.path === "string" && data.path.length > 0) {
+            try {
+              const planUri = vscode.Uri.file(data.path);
+              const document = await vscode.workspace.openTextDocument(planUri);
+              await vscode.window.showTextDocument(document, { preview: false });
+            } catch (error: any) {
+              vscode.window.showErrorMessage(
+                `Unable to open plan file: ${error?.message ?? error}`,
+              );
+              logger.appendLine(
+                `ERROR: failed to open plan document at ${data.path}: ${error}`,
+              );
+            }
+          }
           break;
         case "listConversations":
           this.logEvent("conversations-list-attempted");
@@ -1611,10 +1750,11 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
                 background-color: #808080 !important;
             }
           </style>
+                                        <div id="plan-session-panel" class="plan-session-panel hidden" aria-live="polite"></div>
 
-					<div class="flex-1 overflow-y-auto" id="qa-list"></div>
+                                        <div class="flex-1 overflow-y-auto" id="qa-list"></div>
 
-					<div class="flex-1 overflow-y-auto hidden" id="conversation-list"></div>
+                                        <div class="flex-1 overflow-y-auto hidden" id="conversation-list"></div>
 
 					<div id="in-progress" class="pl-4 pt-2 flex items-center hidden">
 						<div class="typing">Thinking</div>
