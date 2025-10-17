@@ -11,7 +11,7 @@
 import { createAzure } from "@ai-sdk/azure";
 import { createOpenAI } from "@ai-sdk/openai";
 import { ModelMessage, streamText } from "ai";
-import ChatGptViewProvider from "./chatgpt-view-provider";
+import CodeArtViewProvider from "./codeart-view-provider";
 import { logger } from "./logger";
 import { ModelConfig, getHeaders } from "./model-config";
 import { getToolsWithWebSearch } from "./tool-utils";
@@ -20,7 +20,7 @@ const azureAPIVersion = "2025-04-01-preview";
 
 // initGptLegacyModel initializes the GPT legacy model.
 export function initGptLegacyModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   if (config.apiBaseUrl?.includes("openai.azure.com")) {
@@ -60,7 +60,7 @@ export function initGptLegacyModel(
 
 // chatCompletion is a function that completes the chat.
 export async function chatCompletion(
-  provider: ChatGptViewProvider,
+  provider: CodeArtViewProvider,
   question: string,
   images: Record<string, string>,
   startResponse: () => void,
@@ -89,7 +89,7 @@ export async function chatCompletion(
   /* placeholder for response */
   startResponse();
   logger.appendLine(
-    `INFO: chatgpt.model: ${provider.model} chatgpt.question: ${question}`,
+    `INFO: codeart.model: ${provider.model} codeart.question: ${question}`,
   );
 
   provider.chatHistory.push(chatMessage);
@@ -119,5 +119,5 @@ export async function chatCompletion(
   }
   provider.response = chunks.join("");
   provider.chatHistory.push({ role: "assistant", content: chunks.join("") });
-  logger.appendLine(`INFO: chatgpt.response: ${provider.response}`);
+  logger.appendLine(`INFO: codeart.response: ${provider.response}`);
 }

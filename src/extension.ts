@@ -11,12 +11,12 @@
  */
 
 import * as vscode from "vscode";
-import ChatGptViewProvider from "./chatgpt-view-provider";
+import CodeArtViewProvider from "./codeart-view-provider";
 // import { registerMCPToolsWithVSCode } from './github-copilot';
+import { registerInlineCompletionProvider } from "./inline-completion-provider";
 import MCPServerProvider from "./mcp-server-provider";
 import PromptManagerProvider from "./prompt-manager-provider";
 import { PromptStore } from "./types";
-import { registerInlineCompletionProvider } from "./inline-completion-provider";
 
 const menuCommands = [
   "addTests",
@@ -33,14 +33,14 @@ const menuCommands = [
 
 export async function activate(context: vscode.ExtensionContext) {
   let adhocCommandPrefix: string =
-    context.globalState.get("chatgpt-adhoc-prompt") || "";
+    context.globalState.get("codeart-adhoc-prompt") || "";
 
-  const provider = new ChatGptViewProvider(context);
+  const provider = new CodeArtViewProvider(context);
 
   registerInlineCompletionProvider(context, provider);
 
   const view = vscode.window.registerWebviewViewProvider(
-    "chatgpt-copilot.view",
+    "codeart.view",
     provider,
     {
       webviewOptions: {
@@ -50,7 +50,7 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   const freeText = vscode.commands.registerCommand(
-    "chatgpt-copilot.freeText",
+    "codeart.freeText",
     async () => {
       const value = await vscode.window.showInputBox({
         prompt: "Ask anything...",
@@ -63,91 +63,91 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   const resetThread = vscode.commands.registerCommand(
-    "chatgpt-copilot.clearConversation",
+    "codeart.clearConversation",
     async () => {
       provider?.sendMessage({ type: "clearConversation" }, true);
     },
   );
 
   const exportConversation = vscode.commands.registerCommand(
-    "chatgpt-copilot.exportConversation",
+    "codeart.exportConversation",
     async () => {
       provider?.sendMessage({ type: "exportConversation" }, true);
     },
   );
 
   const clearSession = vscode.commands.registerCommand(
-    "chatgpt-copilot.clearSession",
+    "codeart.clearSession",
     () => {
-      context.globalState.update("chatgpt-session-token", null);
-      context.globalState.update("chatgpt-clearance-token", null);
-      context.globalState.update("chatgpt-user-agent", null);
-      context.globalState.update("chatgpt-gpt3-apiKey", null);
+      context.globalState.update("codeart-session-token", null);
+      context.globalState.update("codeart-clearance-token", null);
+      context.globalState.update("codeart-user-agent", null);
+      context.globalState.update("codeart-gpt3-apiKey", null);
       provider?.clearSession();
       provider?.sendMessage({ type: "clearConversation" }, true);
     },
   );
 
   const configChanged = vscode.workspace.onDidChangeConfiguration((e) => {
-    if (e.affectsConfiguration("chatgpt.response.showNotification")) {
+    if (e.affectsConfiguration("codeart.response.showNotification")) {
       provider.subscribeToResponse =
         vscode.workspace
-          .getConfiguration("chatgpt")
+          .getConfiguration("codeart")
           .get("response.showNotification") || false;
     }
 
-    if (e.affectsConfiguration("chatgpt.response.autoScroll")) {
+    if (e.affectsConfiguration("codeart.response.autoScroll")) {
       provider.autoScroll = !!vscode.workspace
-        .getConfiguration("chatgpt")
+        .getConfiguration("codeart")
         .get("response.autoScroll");
     }
 
-    if (e.affectsConfiguration("chatgpt.gpt3.model")) {
+    if (e.affectsConfiguration("codeart.gpt.model")) {
       provider.model = vscode.workspace
-        .getConfiguration("chatgpt")
+        .getConfiguration("codeart")
         .get("gpt3.model");
     }
 
-    if (e.affectsConfiguration("chatgpt.gpt3.customModel")) {
+    if (e.affectsConfiguration("codeart.gpt.customModel")) {
       if (provider.model === "custom") {
         provider.model = vscode.workspace
-          .getConfiguration("chatgpt")
+          .getConfiguration("codeart")
           .get("gpt3.customModel");
       }
     }
 
     if (
-      e.affectsConfiguration("chatgpt.gpt3.provider") ||
-      e.affectsConfiguration("chatgpt.gpt3.apiBaseUrl") ||
-      e.affectsConfiguration("chatgpt.gpt3.model") ||
-      e.affectsConfiguration("chatgpt.gpt3.apiKey") ||
-      e.affectsConfiguration("chatgpt.gpt3.customModel") ||
-      e.affectsConfiguration("chatgpt.gpt3.organization") ||
-      e.affectsConfiguration("chatgpt.gpt3.maxTokens") ||
-      e.affectsConfiguration("chatgpt.gpt3.temperature") ||
-      e.affectsConfiguration("chatgpt.gpt3.claudeCodePath") ||
-      e.affectsConfiguration("chatgpt.gpt3.reasoning.provider") ||
-      e.affectsConfiguration("chatgpt.gpt3.reasoning.model") ||
-      e.affectsConfiguration("chatgpt.gpt3.reasoning.apiKey") ||
-      e.affectsConfiguration("chatgpt.gpt3.reasoning.apiBaseUrl") ||
-      e.affectsConfiguration("chatgpt.gpt3.reasoning.organization") ||
-      e.affectsConfiguration("chatgpt.systemPrompt") ||
-      e.affectsConfiguration("chatgpt.gpt3.top_p")
+      e.affectsConfiguration("codeart.gpt.provider") ||
+      e.affectsConfiguration("codeart.gpt.apiBaseUrl") ||
+      e.affectsConfiguration("codeart.gpt.model") ||
+      e.affectsConfiguration("codeart.gpt.apiKey") ||
+      e.affectsConfiguration("codeart.gpt.customModel") ||
+      e.affectsConfiguration("codeart.gpt.organization") ||
+      e.affectsConfiguration("codeart.gpt.maxTokens") ||
+      e.affectsConfiguration("codeart.gpt.temperature") ||
+      e.affectsConfiguration("codeart.gpt.claudeCodePath") ||
+      e.affectsConfiguration("codeart.gpt.reasoning.provider") ||
+      e.affectsConfiguration("codeart.reasoning.model") ||
+      e.affectsConfiguration("codeart.reasoning.apiKey") ||
+      e.affectsConfiguration("codeart.reasoning.enabled") ||
+      e.affectsConfiguration("codeart.systemPrompt") ||
+      e.affectsConfiguration("codeart.gpt.top_p")
     ) {
       provider.prepareConversation(true);
     }
 
     if (
-      e.affectsConfiguration("chatgpt.promptPrefix") ||
-      e.affectsConfiguration("chatgpt.gpt3.generateCode-enabled") ||
-      e.affectsConfiguration("chatgpt.gpt3.model")
+      e.affectsConfiguration("codeart.promptTemplates") ||
+      e.affectsConfiguration("codeart.contextMenu.enabledActions") ||
+      e.affectsConfiguration("codeart.gpt.generateCode-enabled") ||
+      e.affectsConfiguration("codeart.gpt.model")
     ) {
       setContext();
     }
   });
 
   const adhocCommand = vscode.commands.registerCommand(
-    "chatgpt-copilot.adhoc",
+    "codeart.adhoc",
     async () => {
       const editor = vscode.window.activeTextEditor;
 
@@ -175,7 +175,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
             adhocCommandPrefix = value.trim() || "";
             context.globalState.update(
-              "chatgpt-adhoc-prompt",
+              "codeart-adhoc-prompt",
               adhocCommandPrefix,
             );
           });
@@ -191,7 +191,7 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   const generateCodeCommand = vscode.commands.registerCommand(
-    `chatgpt-copilot.generateCode`,
+    `codeart.generateCode`,
     () => {
       const editor = vscode.window.activeTextEditor;
 
@@ -213,10 +213,27 @@ export async function activate(context: vscode.ExtensionContext) {
   const registeredCommands = menuCommands
     .filter((command) => command !== "adhoc" && command !== "generateCode")
     .map((command) =>
-      vscode.commands.registerCommand(`chatgpt-copilot.${command}`, () => {
-        const prompt = vscode.workspace
-          .getConfiguration("chatgpt")
-          .get<string>(`promptPrefix.${command}`);
+      vscode.commands.registerCommand(`codeart.${command}`, () => {
+        const config = vscode.workspace.getConfiguration("codeart");
+        const enabledActions = config.get<string[]>("contextMenu.enabledActions", [
+          "generateCode", "addTests", "findProblems", "optimize", "explain", "addComments", "completeCode", "adhoc"
+        ]);
+
+        // Check if this action is enabled
+        if (!enabledActions.includes(command)) {
+          return;
+        }
+
+        const promptTemplates = config.get<Record<string, string>>("promptTemplates", {
+          "addTests": "Implement tests for the following code",
+          "findProblems": "Find problems with the following code",
+          "optimize": "Optimize the following code",
+          "explain": "Explain the following code",
+          "addComments": "Add comments for the following code",
+          "completeCode": "Complete the following code"
+        });
+
+        const prompt = promptTemplates[command];
         const editor = vscode.window.activeTextEditor;
 
         if (!editor) {
@@ -236,21 +253,21 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const promptManager = new PromptManagerProvider(context);
   const promptManagerView = vscode.window.registerWebviewViewProvider(
-    "chatgpt-copilot.promptManager",
+    "codeart.promptManager",
     promptManager,
   );
 
   const managePrompts = vscode.commands.registerCommand(
-    "chatgpt-copilot.managePrompts",
+    "codeart.managePrompts",
     async () => {
       await vscode.commands.executeCommand(
-        "chatgpt-copilot.promptManager.focus",
+        "codeart.promptManager.focus",
       );
     },
   );
 
   const debugPrompts = vscode.commands.registerCommand(
-    "chatgpt-copilot.debugPrompts",
+    "codeart.debugPrompts",
     async () => {
       const prompts = context.globalState.get<PromptStore>("prompts");
       vscode.window.showInformationMessage(
@@ -260,11 +277,11 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   const togglePromptManager = vscode.commands.registerCommand(
-    "chatgpt-copilot.togglePromptManager",
+    "codeart.togglePromptManager",
     async () => {
       const panel = vscode.window.createWebviewPanel(
-        "chatgpt-copilot.promptManager",
-        "ChatGPT: Prompt Manager",
+        "codeart.promptManager",
+        "CodeArt: Prompt Manager",
         vscode.ViewColumn.Beside,
         {
           enableScripts: true,
@@ -304,7 +321,7 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   let addCurrentFileCommand = vscode.commands.registerCommand(
-    "chatgpt-copilot.addCurrentFile",
+    "codeart.addCurrentFile",
     () => {
       provider.addCurrentFileToContext();
     },
@@ -312,16 +329,16 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const mcpServerProvider = new MCPServerProvider(context);
   const mcpServerView = vscode.window.registerWebviewViewProvider(
-    "chatgpt-copilot.mcpServers",
+    "codeart.mcpServers",
     mcpServerProvider,
   );
 
   const openMCPServers = vscode.commands.registerCommand(
-    "chatgpt-copilot.openMCPServers",
+    "codeart.openMCPServers",
     () => {
       const panel = vscode.window.createWebviewPanel(
-        "chatgpt-copilot.mcpServers",
-        "ChatGPT: MCP Servers",
+        "codeart.mcpServers",
+        "CodeArt: MCP Servers",
         vscode.ViewColumn.One,
         {
           enableScripts: true,
@@ -363,32 +380,32 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   const openSettings = vscode.commands.registerCommand(
-    "chatgpt-copilot.openSettings",
+    "codeart.openSettings",
     async () => {
       await vscode.commands.executeCommand(
         "workbench.action.openSettings",
-        "@ext:feiskyer.chatgpt-copilot",
+        "@ext:pywind.codeart",
       );
     },
   );
 
   const setAgentMode = vscode.commands.registerCommand(
-    "chatgpt-copilot.setMode.agent",
+    "codeart.setMode.agent",
     () => provider.setChatMode("agent"),
   );
 
   const setAskMode = vscode.commands.registerCommand(
-    "chatgpt-copilot.setMode.ask",
+    "codeart.setMode.ask",
     () => provider.setChatMode("ask"),
   );
 
   const setPlanMode = vscode.commands.registerCommand(
-    "chatgpt-copilot.setMode.plan",
+    "codeart.setMode.plan",
     () => provider.setChatMode("plan"),
   );
 
   const cycleMode = vscode.commands.registerCommand(
-    "chatgpt-copilot.cycleChatMode",
+    "codeart.cycleChatMode",
     () => provider.cycleChatMode(),
   );
 
@@ -417,14 +434,15 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   const setContext = () => {
+    const config = vscode.workspace.getConfiguration("codeart");
+    const enabledActions = config.get<string[]>("contextMenu.enabledActions", [
+      "generateCode", "addTests", "findProblems", "optimize", "explain", "addComments", "completeCode", "adhoc"
+    ]);
+
     menuCommands.forEach((command) => {
       if (command === "generateCode") {
-        let generateCodeEnabled = !!vscode.workspace
-          .getConfiguration("chatgpt")
-          .get<boolean>("gpt3.generateCode-enabled");
-        const modelName = vscode.workspace
-          .getConfiguration("chatgpt")
-          .get("gpt3.model") as string;
+        let generateCodeEnabled = !!config.get<boolean>("gpt.generateCode-enabled");
+        const modelName = config.get("gpt.model") as string;
         generateCodeEnabled =
           generateCodeEnabled && modelName.startsWith("code-");
         vscode.commands.executeCommand(
@@ -433,9 +451,7 @@ export async function activate(context: vscode.ExtensionContext) {
           generateCodeEnabled,
         );
       } else {
-        const enabled = !!vscode.workspace
-          .getConfiguration("chatgpt.promptPrefix")
-          .get<boolean>(`${command}-enabled`);
+        const enabled = enabledActions.includes(command);
         vscode.commands.executeCommand(
           "setContext",
           `${command}-enabled`,
@@ -448,4 +464,4 @@ export async function activate(context: vscode.ExtensionContext) {
   setContext();
 }
 
-export function deactivate() {}
+export function deactivate() { }

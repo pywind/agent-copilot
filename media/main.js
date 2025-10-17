@@ -22,19 +22,19 @@
 
     // Create a proper Renderer instance
     const renderer = new marked.Renderer();
-    
+
     // Only override specific methods we need to customize
     // Custom list item renderer for task lists
-    renderer.listitem = function(text, task, checked) {
+    renderer.listitem = function (text, task, checked) {
         if (task) {
             return `<li class="task-list-item"><input type="checkbox" ${checked ? 'checked' : ''} disabled> ${text}</li>`;
         }
         // Use default behavior for non-task list items
         return `<li>${text}</li>`;
     };
-    
+
     // Custom list renderer for styling classes
-    renderer.list = function(body, ordered, start) {
+    renderer.list = function (body, ordered, start) {
         const type = ordered ? 'ol' : 'ul';
         const startAttr = (ordered && start !== 1) ? ` start="${start}"` : '';
         return `<${type}${startAttr} class="list-${ordered ? 'decimal' : 'disc'}">${body}</${type}>`;
@@ -135,11 +135,11 @@
 
         const clarificationsHtml = clarifications.length
             ? `<ol class="plan-clarifications">${clarifications
-                  .map(
-                      (item) =>
-                          `<li><p class="plan-clar-question">${escapeHtml(item.question)}</p><p class="plan-clar-answer">${escapeHtml(item.answer)}</p></li>`,
-                  )
-                  .join('')}</ol>`
+                .map(
+                    (item) =>
+                        `<li><p class="plan-clar-question">${escapeHtml(item.question)}</p><p class="plan-clar-answer">${escapeHtml(item.answer)}</p></li>`,
+                )
+                .join('')}</ol>`
             : '<p class="plan-empty">No clarifications collected yet.</p>';
 
         const planHtml = session.planMarkdown
@@ -152,37 +152,36 @@
 
         const toolHtml = toolExecutions.length
             ? toolExecutions
-                  .map((execution) => {
-                      const argument = escapeHtml(execution.argument || '');
-                      const toolName = escapeHtml(execution.tool || 'Tool');
-                      const stepId = escapeHtml(execution.id || 'Step');
-                      if (execution.error) {
-                          return `<div class="plan-tool-entry"><div class="plan-tool-meta"><strong>${stepId}</strong><span>${toolName}</span><code>${argument}</code></div><p class="plan-tool-error">${escapeHtml(execution.error)}</p></div>`;
-                      }
+                .map((execution) => {
+                    const argument = escapeHtml(execution.argument || '');
+                    const toolName = escapeHtml(execution.tool || 'Tool');
+                    const stepId = escapeHtml(execution.id || 'Step');
+                    if (execution.error) {
+                        return `<div class="plan-tool-entry"><div class="plan-tool-meta"><strong>${stepId}</strong><span>${toolName}</span><code>${argument}</code></div><p class="plan-tool-error">${escapeHtml(execution.error)}</p></div>`;
+                    }
 
-                      const output = (execution.output || '').slice(0, 1000);
-                      const truncated = execution.output && execution.output.length > 1000;
-                      return `<div class="plan-tool-entry"><div class="plan-tool-meta"><strong>${stepId}</strong><span>${toolName}</span><code>${argument}</code></div><pre class="plan-tool-output">${escapeHtml(output)}</pre>${
-                          truncated
-                              ? '<p class="plan-note">Output truncated for display.</p>'
-                              : ''
-                      }</div>`;
-                  })
-                  .join('')
+                    const output = (execution.output || '').slice(0, 1000);
+                    const truncated = execution.output && execution.output.length > 1000;
+                    return `<div class="plan-tool-entry"><div class="plan-tool-meta"><strong>${stepId}</strong><span>${toolName}</span><code>${argument}</code></div><pre class="plan-tool-output">${escapeHtml(output)}</pre>${truncated
+                            ? '<p class="plan-note">Output truncated for display.</p>'
+                            : ''
+                        }</div>`;
+                })
+                .join('')
             : '<p class="plan-empty">No tool observations yet.</p>';
 
         const pendingNotice = session.pendingClarification
             ? `<div class="plan-alert">Waiting for clarification: ${escapeHtml(
-                  session.pendingClarification,
-              )}</div>`
+                session.pendingClarification,
+            )}</div>`
             : '';
 
         const planActions = session.planFilePath
             ? `<div class="plan-file-actions"><button type="button" class="modern-button plan-open-button" data-plan-path="${escapeHtml(
-                  session.planFilePath,
-              )}">Open plan file</button><span class="plan-file-path" title="${escapeHtml(
-                  session.planFilePath,
-              )}">${escapeHtml(formatPlanPath(session.planFilePath))}</span></div>`
+                session.planFilePath,
+            )}">Open plan file</button><span class="plan-file-path" title="${escapeHtml(
+                session.planFilePath,
+            )}">${escapeHtml(formatPlanPath(session.planFilePath))}</span></div>`
             : '<p class="plan-file-path">Plan will be saved once a workspace folder is available.</p>';
 
         panel.innerHTML = `
@@ -254,46 +253,27 @@
 
         window.chatMode = mode;
 
-        const picker = document.getElementById('mode-picker');
-        if (!picker) {
+        // Update mode button states
+        const modeButtons = document.querySelectorAll('.mode-button');
+        if (modeButtons.length === 0) {
             window.pendingModeState = modeState;
             return;
         }
 
-        if (window.availableModes && window.availableModes.length > 0) {
-            const expectedValues = window.availableModes.map((entry) => entry.mode);
-            const currentValues = Array.from(picker.options).map((option) => option.value);
-            const listsDiffer =
-                expectedValues.length !== currentValues.length ||
-                expectedValues.some((value, index) => value !== currentValues[index]);
-
-            if (listsDiffer) {
-                picker.innerHTML = '';
-                window.availableModes.forEach((entry) => {
-                    const option = document.createElement('option');
-                    option.value = entry.mode;
-                    option.textContent = entry.definition.label;
-                    picker.appendChild(option);
-                });
+        modeButtons.forEach(button => {
+            const buttonMode = button.getAttribute('data-mode');
+            if (buttonMode === mode) {
+                button.classList.add('active');
+            } else {
+                button.classList.remove('active');
             }
-        }
+        });
 
-        picker.value = mode;
-
-        const descriptionEl = document.getElementById('mode-description');
-        if (descriptionEl && resolvedDefinition) {
-            descriptionEl.textContent = resolvedDefinition.description;
-        }
-
+        // Update warning message
         const warningEl = document.getElementById('mode-warning');
         if (warningEl) {
             const allowsEdits = resolvedDefinition?.allowsEdits !== false;
             warningEl.classList.toggle('hidden', allowsEdits);
-        }
-
-        const activeLabelEl = document.getElementById('mode-active-label');
-        if (activeLabelEl && resolvedDefinition) {
-            activeLabelEl.textContent = resolvedDefinition.label;
         }
 
         if (document.body) {
@@ -308,14 +288,27 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        const picker = document.getElementById('mode-picker');
-        if (picker) {
-            picker.addEventListener('change', (event) => {
-                const value = event.target.value;
-                if (value && value !== window.chatMode) {
-                    vscode.postMessage({ type: 'setChatMode', value });
+        // Initialize mode selector buttons
+        const modeButtons = document.querySelectorAll('.mode-button');
+        modeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const mode = button.getAttribute('data-mode');
+                if (mode && mode !== window.chatMode) {
+                    // Update UI immediately for responsive feel
+                    modeButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    // Send to extension
+                    vscode.postMessage({ type: 'setChatMode', value: mode });
                 }
             });
+        });
+
+        // Initialize model selector
+        const modelSelector = document.getElementById('turn-model-selector');
+        if (modelSelector) {
+            // Request available models from extension
+            vscode.postMessage({ type: 'getAvailableModels' });
         }
 
         if (window.pendingModeState) {
@@ -558,7 +551,7 @@
             case "startResponse":
                 const startElement = document.getElementById(`${message.id}-start`);
                 if (!startElement) {
-                    list.innerHTML += `<div class="p-4 self-end mt-2 pb-4 answer-element-ext"><h2 class="mb-3 flex">${aiSvg}ChatGPT</h2></div>`;
+                    list.innerHTML += `<div class="p-4 self-end mt-2 pb-4 answer-element-ext"><h2 class="mb-3 flex">${aiSvg}CodeArt</h2></div>`;
                 }
                 break;
 
@@ -657,10 +650,10 @@
                     (typeof message.value === 'object' ?
                         JSON.stringify(message.value, null, 2) :
                         message.value) :
-                    "An error occurred. If this issue persists please clear your session token with `ChatGPT: Reset session` command and/or restart your Visual Studio Code.";
+                    "An error occurred. If this issue persists please clear your session token with `CodeArt: Reset session` command and/or restart your Visual Studio Code.";
                 list.innerHTML +=
                     `<div class="p-4 self-end mt-4 pb-8 error-element-ext">
-                        <h2 class="mb-5 flex">${aiSvg}ChatGPT</h2>
+                        <h2 class="mb-5 flex">${aiSvg}CodeArt</h2>
                         <div class="text-red-400">${marked.parse(messageValue)}</div>
                     </div>`;
 
@@ -818,6 +811,46 @@
                     }
                 }
                 break;
+            case "availableModels":
+                // Populate the model selector dropdown
+                const modelSelector = document.getElementById('turn-model-selector');
+                if (modelSelector && message.models) {
+                    // Store current value
+                    const currentValue = modelSelector.value;
+
+                    // Clear existing options except the default one
+                    modelSelector.innerHTML = '<option value="">Use default model</option>';
+
+                    // Add provider groups
+                    const modelsByProvider = {};
+                    message.models.forEach(model => {
+                        if (!modelsByProvider[model.provider]) {
+                            modelsByProvider[model.provider] = [];
+                        }
+                        modelsByProvider[model.provider].push(model);
+                    });
+
+                    // Add grouped options
+                    Object.keys(modelsByProvider).sort().forEach(provider => {
+                        const optgroup = document.createElement('optgroup');
+                        optgroup.label = provider;
+
+                        modelsByProvider[provider].forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model.id;
+                            option.textContent = model.name;
+                            optgroup.appendChild(option);
+                        });
+
+                        modelSelector.appendChild(optgroup);
+                    });
+
+                    // Restore previous value if it still exists
+                    if (currentValue) {
+                        modelSelector.value = currentValue;
+                    }
+                }
+                break;
         }
     }
 
@@ -849,7 +882,7 @@
 
     const handleMcpServerStatus = (message) => {
         const { serverName, status, toolCount, error } = message;
-        
+
         // Create or get existing status container
         let statusContainer = document.getElementById('mcp-status-container');
         if (!statusContainer) {
@@ -858,10 +891,10 @@
             statusContainer.className = 'fixed top-4 right-4 z-50 max-w-sm space-y-2';
             document.body.appendChild(statusContainer);
         }
-        
+
         const statusId = `mcp-status-${serverName}`;
         let statusElement = document.getElementById(statusId);
-        
+
         if (status === 'starting') {
             // Create new status element for starting server
             statusElement = document.createElement('div');
@@ -888,7 +921,7 @@
                         <span>Connected: <strong>${serverName}</strong> (${toolCount} tools)</span>
                     </div>
                 `;
-                
+
                 // Auto-remove success message after 3 seconds
                 setTimeout(() => {
                     if (statusElement && statusElement.parentNode) {
@@ -918,7 +951,7 @@
                     </div>
                     ${error ? `<div class="text-xs mt-1 text-red-600">${error}</div>` : ''}
                 `;
-                
+
                 // Auto-remove error message after 10 seconds
                 setTimeout(() => {
                     if (statusElement && statusElement.parentNode) {
@@ -1493,14 +1526,24 @@
         }
 
         if (value?.length > 0) {
+            // Get the selected model for this turn
+            const modelSelector = document.getElementById('turn-model-selector');
+            const selectedModel = modelSelector ? modelSelector.value : '';
+
             vscode.postMessage({
                 type: "addFreeTextQuestion",
-                value
+                value,
+                model: selectedModel || undefined // Only send if a specific model is selected
             });
 
             input.value = "";
             if (autoResizeTextarea) {
                 autoResizeTextarea.reset();
+            }
+
+            // Reset model selector to default after sending
+            if (modelSelector) {
+                modelSelector.value = '';
             }
         }
     };
@@ -1607,8 +1650,8 @@
 
 
 
-// Add tooltip styles to the styleSheet
-styleSheet.textContent += `
+    // Add tooltip styles to the styleSheet
+    styleSheet.textContent += `
             .tooltip {
         position: absolute;
         background: var(--vscode-editor-background);
@@ -1645,491 +1688,491 @@ styleSheet.textContent += `
     }
     `;
 
-// Enhanced file attachment handler with visual feedback and error handling
-function handleFileAttachment() {
-    const button = document.getElementById('file-attachment-button');
-    if (!button) return;
+    // Enhanced file attachment handler with visual feedback and error handling
+    function handleFileAttachment() {
+        const button = document.getElementById('file-attachment-button');
+        if (!button) return;
 
-    // Add loading state
-    button.classList.add('loading');
-    button.disabled = true;
+        // Add loading state
+        button.classList.add('loading');
+        button.disabled = true;
 
-    // Send message to extension
-    vscode.postMessage({
-        type: "searchFile"
-    });
+        // Send message to extension
+        vscode.postMessage({
+            type: "searchFile"
+        });
 
-    // Set up timeout for error handling
-    const timeoutId = setTimeout(() => {
-        showFileAttachmentError('File selection timed out');
-    }, 30000); // 30 second timeout
+        // Set up timeout for error handling
+        const timeoutId = setTimeout(() => {
+            showFileAttachmentError('File selection timed out');
+        }, 30000); // 30 second timeout
 
-    // Store timeout ID for cleanup
-    button.dataset.timeoutId = timeoutId;
-}
-
-// Show file attachment success feedback
-function showFileAttachmentSuccess() {
-    const button = document.getElementById('file-attachment-button');
-    if (!button) return;
-
-    // Clear loading state and timeout
-    button.classList.remove('loading', 'error');
-    button.disabled = false;
-    clearTimeout(button.dataset.timeoutId);
-
-    // Show success state
-    button.classList.add('success');
-
-    // Remove success state after animation
-    setTimeout(() => {
-        button.classList.remove('success');
-    }, 600);
-}
-
-// Show file attachment error feedback
-function showFileAttachmentError(errorMessage) {
-    const button = document.getElementById('file-attachment-button');
-    if (!button) return;
-
-    // Clear loading state and timeout
-    button.classList.remove('loading', 'success');
-    button.disabled = false;
-    clearTimeout(button.dataset.timeoutId);
-
-    // Show error state
-    button.classList.add('error');
-
-    // Show error message if provided
-    if (errorMessage) {
-        console.warn('File attachment error:', errorMessage);
-        // Could add a toast notification here in the future
+        // Store timeout ID for cleanup
+        button.dataset.timeoutId = timeoutId;
     }
 
-    // Remove error state after animation
-    setTimeout(() => {
-        button.classList.remove('error');
-    }, 500);
-}
+    // Show file attachment success feedback
+    function showFileAttachmentSuccess() {
+        const button = document.getElementById('file-attachment-button');
+        if (!button) return;
 
-// Reset file attachment button state
-function resetFileAttachmentState() {
-    const button = document.getElementById('file-attachment-button');
-    if (!button) return;
+        // Clear loading state and timeout
+        button.classList.remove('loading', 'error');
+        button.disabled = false;
+        clearTimeout(button.dataset.timeoutId);
 
-    button.classList.remove('loading', 'success', 'error');
-    button.disabled = false;
-    clearTimeout(button.dataset.timeoutId);
-}
+        // Show success state
+        button.classList.add('success');
 
-// Update the prompt manager button in the HTML template
-function setupPromptManagerButton() {
-    const promptManager = document.getElementById('toggle-prompt-manager');
-    const promptManagerIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+        // Remove success state after animation
+        setTimeout(() => {
+            button.classList.remove('success');
+        }, 600);
+    }
+
+    // Show file attachment error feedback
+    function showFileAttachmentError(errorMessage) {
+        const button = document.getElementById('file-attachment-button');
+        if (!button) return;
+
+        // Clear loading state and timeout
+        button.classList.remove('loading', 'success');
+        button.disabled = false;
+        clearTimeout(button.dataset.timeoutId);
+
+        // Show error state
+        button.classList.add('error');
+
+        // Show error message if provided
+        if (errorMessage) {
+            console.warn('File attachment error:', errorMessage);
+            // Could add a toast notification here in the future
+        }
+
+        // Remove error state after animation
+        setTimeout(() => {
+            button.classList.remove('error');
+        }, 500);
+    }
+
+    // Reset file attachment button state
+    function resetFileAttachmentState() {
+        const button = document.getElementById('file-attachment-button');
+        if (!button) return;
+
+        button.classList.remove('loading', 'success', 'error');
+        button.disabled = false;
+        clearTimeout(button.dataset.timeoutId);
+    }
+
+    // Update the prompt manager button in the HTML template
+    function setupPromptManagerButton() {
+        const promptManager = document.getElementById('toggle-prompt-manager');
+        const promptManagerIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
     </svg>`;
-    if (promptManager) {
-        promptManager.innerHTML = `
+        if (promptManager) {
+            promptManager.innerHTML = `
                 ${promptManagerIcon}
                 <div class="tooltip right">Manage system prompts (use # to search prompts)</div>
         `;
 
-        // Add hover handlers for tooltip
-        promptManager.addEventListener('mouseenter', () => {
-            promptManager.querySelector('.tooltip').classList.add('show');
-        });
-        promptManager.addEventListener('mouseleave', () => {
-            promptManager.querySelector('.tooltip').classList.remove('show');
-        });
-    }
-}
-
-// Call setupPromptManagerButton after DOM is loaded
-document.addEventListener('DOMContentLoaded', setupPromptManagerButton);
-
-// Enhanced Button State Management System
-class ButtonStateManager {
-    constructor() {
-        this.buttons = new Map();
-        this.init();
+            // Add hover handlers for tooltip
+            promptManager.addEventListener('mouseenter', () => {
+                promptManager.querySelector('.tooltip').classList.add('show');
+            });
+            promptManager.addEventListener('mouseleave', () => {
+                promptManager.querySelector('.tooltip').classList.remove('show');
+            });
+        }
     }
 
-    init() {
-        // Initialize all modern buttons
-        const modernButtons = document.querySelectorAll('.modern-button');
-        modernButtons.forEach(button => {
-            this.registerButton(button);
-        });
-    }
+    // Call setupPromptManagerButton after DOM is loaded
+    document.addEventListener('DOMContentLoaded', setupPromptManagerButton);
 
-    registerButton(button) {
-        if (!button || this.buttons.has(button.id)) return;
+    // Enhanced Button State Management System
+    class ButtonStateManager {
+        constructor() {
+            this.buttons = new Map();
+            this.init();
+        }
 
-        const buttonState = {
-            element: button,
-            isActive: button.classList.contains('modern-button-active'),
-            isDisabled: button.disabled,
-            originalTitle: button.getAttribute('title') || ''
-        };
+        init() {
+            // Initialize all modern buttons
+            const modernButtons = document.querySelectorAll('.modern-button');
+            modernButtons.forEach(button => {
+                this.registerButton(button);
+            });
+        }
 
-        this.buttons.set(button.id, buttonState);
-        this.attachEventListeners(button);
-    }
+        registerButton(button) {
+            if (!button || this.buttons.has(button.id)) return;
 
-    attachEventListeners(button) {
-        // Enhanced hover effects
-        button.addEventListener('mouseenter', (e) => {
-            if (!button.disabled) {
-                this.handleButtonHover(button, true);
-            }
-        });
+            const buttonState = {
+                element: button,
+                isActive: button.classList.contains('modern-button-active'),
+                isDisabled: button.disabled,
+                originalTitle: button.getAttribute('title') || ''
+            };
 
-        button.addEventListener('mouseleave', (e) => {
-            if (!button.disabled) {
-                this.handleButtonHover(button, false);
-            }
-        });
+            this.buttons.set(button.id, buttonState);
+            this.attachEventListeners(button);
+        }
 
-        // Enhanced focus effects
-        button.addEventListener('focus', (e) => {
-            if (!button.disabled) {
-                this.handleButtonFocus(button, true);
-            }
-        });
+        attachEventListeners(button) {
+            // Enhanced hover effects
+            button.addEventListener('mouseenter', (e) => {
+                if (!button.disabled) {
+                    this.handleButtonHover(button, true);
+                }
+            });
 
-        button.addEventListener('blur', (e) => {
-            if (!button.disabled) {
-                this.handleButtonFocus(button, false);
-            }
-        });
+            button.addEventListener('mouseleave', (e) => {
+                if (!button.disabled) {
+                    this.handleButtonHover(button, false);
+                }
+            });
 
-        // Click feedback
-        button.addEventListener('mousedown', (e) => {
-            if (!button.disabled) {
-                this.handleButtonPress(button, true);
-            }
-        });
+            // Enhanced focus effects
+            button.addEventListener('focus', (e) => {
+                if (!button.disabled) {
+                    this.handleButtonFocus(button, true);
+                }
+            });
 
-        button.addEventListener('mouseup', (e) => {
-            if (!button.disabled) {
-                this.handleButtonPress(button, false);
-            }
-        });
-    }
+            button.addEventListener('blur', (e) => {
+                if (!button.disabled) {
+                    this.handleButtonFocus(button, false);
+                }
+            });
 
-    handleButtonHover(button, isHovering) {
-        const buttonState = this.buttons.get(button.id);
-        if (!buttonState) return;
+            // Click feedback
+            button.addEventListener('mousedown', (e) => {
+                if (!button.disabled) {
+                    this.handleButtonPress(button, true);
+                }
+            });
 
-        if (isHovering) {
-            button.style.transform = 'translateY(-1px)';
-            button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+            button.addEventListener('mouseup', (e) => {
+                if (!button.disabled) {
+                    this.handleButtonPress(button, false);
+                }
+            });
+        }
 
-            // Update tooltip for send button based on state
-            if (button.id === 'ask-button') {
-                const hasContent = document.getElementById('question-input')?.value.trim().length > 0;
-                if (!hasContent) {
-                    button.setAttribute('title', 'Enter a message to send');
+        handleButtonHover(button, isHovering) {
+            const buttonState = this.buttons.get(button.id);
+            if (!buttonState) return;
+
+            if (isHovering) {
+                button.style.transform = 'translateY(-1px)';
+                button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+
+                // Update tooltip for send button based on state
+                if (button.id === 'ask-button') {
+                    const hasContent = document.getElementById('question-input')?.value.trim().length > 0;
+                    if (!hasContent) {
+                        button.setAttribute('title', 'Enter a message to send');
+                    }
+                }
+            } else {
+                button.style.transform = '';
+                button.style.boxShadow = '';
+
+                // Restore original tooltip
+                if (button.id === 'ask-button') {
+                    const hasContent = document.getElementById('question-input')?.value.trim().length > 0;
+                    button.setAttribute('title', hasContent ? 'Send message' : 'Enter a message to send');
                 }
             }
-        } else {
-            button.style.transform = '';
-            button.style.boxShadow = '';
-
-            // Restore original tooltip
-            if (button.id === 'ask-button') {
-                const hasContent = document.getElementById('question-input')?.value.trim().length > 0;
-                button.setAttribute('title', hasContent ? 'Send message' : 'Enter a message to send');
-            }
         }
-    }
 
-    handleButtonFocus(button, isFocused) {
-        if (isFocused) {
-            button.style.transform = 'translateY(-1px)';
-        } else {
-            button.style.transform = '';
-        }
-    }
-
-    handleButtonPress(button, isPressed) {
-        if (isPressed) {
-            button.style.transform = 'translateY(0)';
-            button.style.transition = 'transform 0.1s ease';
-        } else {
-            button.style.transform = 'translateY(-1px)';
-            button.style.transition = 'transform 0.2s ease';
-        }
-    }
-
-    updateButtonState(buttonId, isActive, customTitle = null) {
-        const buttonState = this.buttons.get(buttonId);
-        if (!buttonState) return;
-
-        const button = buttonState.element;
-
-        if (isActive !== buttonState.isActive) {
-            if (isActive) {
-                button.classList.remove('modern-button-inactive');
-                button.classList.add('modern-button-active');
+        handleButtonFocus(button, isFocused) {
+            if (isFocused) {
+                button.style.transform = 'translateY(-1px)';
             } else {
-                button.classList.remove('modern-button-active');
-                button.classList.add('modern-button-inactive');
+                button.style.transform = '';
             }
-            buttonState.isActive = isActive;
         }
 
-        // Update title if provided
-        if (customTitle) {
-            button.setAttribute('title', customTitle);
-            buttonState.originalTitle = customTitle;
-        }
-    }
-
-    setButtonDisabled(buttonId, disabled) {
-        const buttonState = this.buttons.get(buttonId);
-        if (!buttonState) return;
-
-        const button = buttonState.element;
-        button.disabled = disabled;
-        buttonState.isDisabled = disabled;
-
-        if (disabled) {
-            button.style.transform = '';
-            button.style.boxShadow = '';
-        }
-    }
-
-    // Method to update all button states based on current context
-    updateAllButtonStates() {
-        try {
-            const input = document.getElementById('question-input');
-            const hasContent = input?.value.trim().length > 0;
-            const isDisabled = input?.disabled;
-
-            // Update send button
-            this.updateButtonState('ask-button', hasContent && !isDisabled,
-                hasContent ? 'Send message' : 'Enter a message to send');
-            this.setButtonDisabled('ask-button', isDisabled);
-
-            // Update other buttons based on disabled state
-            const allowsAttachments =
-                !window.modeDefinitions ||
-                window.modeDefinitions[window.chatMode]?.allowsFileAttachments !== false;
-            this.setButtonDisabled('file-attachment-button', isDisabled || !allowsAttachments);
-            const fileButtonState = this.buttons.get('file-attachment-button');
-            if (fileButtonState) {
-                fileButtonState.element.setAttribute('title', allowsAttachments
-                    ? 'Attach file'
-                    : 'File attachments are disabled in this mode');
+        handleButtonPress(button, isPressed) {
+            if (isPressed) {
+                button.style.transform = 'translateY(0)';
+                button.style.transition = 'transform 0.1s ease';
+            } else {
+                button.style.transform = 'translateY(-1px)';
+                button.style.transition = 'transform 0.2s ease';
             }
-            this.setButtonDisabled('new-chat-button', isDisabled);
-            this.setButtonDisabled('export-button', isDisabled);
-            this.setButtonDisabled('settings-button', isDisabled);
-        } catch (error) {
-            console.warn('Error updating button states:', error);
         }
-    }
 
-    // Method to handle animation preferences
-    respectAnimationPreferences() {
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        updateButtonState(buttonId, isActive, customTitle = null) {
+            const buttonState = this.buttons.get(buttonId);
+            if (!buttonState) return;
 
-        this.buttons.forEach((buttonState, buttonId) => {
             const button = buttonState.element;
-            if (prefersReducedMotion) {
-                button.style.transition = 'none';
-            } else {
-                button.style.transition = '';
+
+            if (isActive !== buttonState.isActive) {
+                if (isActive) {
+                    button.classList.remove('modern-button-inactive');
+                    button.classList.add('modern-button-active');
+                } else {
+                    button.classList.remove('modern-button-active');
+                    button.classList.add('modern-button-inactive');
+                }
+                buttonState.isActive = isActive;
             }
-        });
-    }
 
-    // Initialize animation preference handling
-    initAnimationPreferences() {
-        this.respectAnimationPreferences();
+            // Update title if provided
+            if (customTitle) {
+                button.setAttribute('title', customTitle);
+                buttonState.originalTitle = customTitle;
+            }
+        }
 
-        // Listen for changes in animation preferences
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-        mediaQuery.addEventListener('change', () => {
+        setButtonDisabled(buttonId, disabled) {
+            const buttonState = this.buttons.get(buttonId);
+            if (!buttonState) return;
+
+            const button = buttonState.element;
+            button.disabled = disabled;
+            buttonState.isDisabled = disabled;
+
+            if (disabled) {
+                button.style.transform = '';
+                button.style.boxShadow = '';
+            }
+        }
+
+        // Method to update all button states based on current context
+        updateAllButtonStates() {
+            try {
+                const input = document.getElementById('question-input');
+                const hasContent = input?.value.trim().length > 0;
+                const isDisabled = input?.disabled;
+
+                // Update send button
+                this.updateButtonState('ask-button', hasContent && !isDisabled,
+                    hasContent ? 'Send message' : 'Enter a message to send');
+                this.setButtonDisabled('ask-button', isDisabled);
+
+                // Update other buttons based on disabled state
+                const allowsAttachments =
+                    !window.modeDefinitions ||
+                    window.modeDefinitions[window.chatMode]?.allowsFileAttachments !== false;
+                this.setButtonDisabled('file-attachment-button', isDisabled || !allowsAttachments);
+                const fileButtonState = this.buttons.get('file-attachment-button');
+                if (fileButtonState) {
+                    fileButtonState.element.setAttribute('title', allowsAttachments
+                        ? 'Attach file'
+                        : 'File attachments are disabled in this mode');
+                }
+                this.setButtonDisabled('new-chat-button', isDisabled);
+                this.setButtonDisabled('export-button', isDisabled);
+                this.setButtonDisabled('settings-button', isDisabled);
+            } catch (error) {
+                console.warn('Error updating button states:', error);
+            }
+        }
+
+        // Method to handle animation preferences
+        respectAnimationPreferences() {
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            this.buttons.forEach((buttonState, buttonId) => {
+                const button = buttonState.element;
+                if (prefersReducedMotion) {
+                    button.style.transition = 'none';
+                } else {
+                    button.style.transition = '';
+                }
+            });
+        }
+
+        // Initialize animation preference handling
+        initAnimationPreferences() {
             this.respectAnimationPreferences();
-        });
-    }
-}
 
-// Initialize button state manager
-let buttonStateManager;
-document.addEventListener('DOMContentLoaded', () => {
-    buttonStateManager = new ButtonStateManager();
-    // Make it globally accessible
-    window.buttonStateManager = buttonStateManager;
-    // Initialize animation preferences
-    buttonStateManager.initAnimationPreferences();
-});
-
-// AutoResizeTextarea class for dynamic height adjustment
-class AutoResizeTextarea {
-    constructor(textarea, options = {}) {
-        this.textarea = textarea;
-        this.minHeight = options.minHeight || 48;
-        this.maxHeight = options.maxHeight || 164;
-        this.transitionDuration = options.transitionDuration || 200;
-        this.debounceTimeout = null;
-
-        this.init();
+            // Listen for changes in animation preferences
+            const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+            mediaQuery.addEventListener('change', () => {
+                this.respectAnimationPreferences();
+            });
+        }
     }
 
-    init() {
-        // Set initial height and styles
-        this.textarea.style.height = `${this.minHeight}px`;
-        this.textarea.style.transition = `height ${this.transitionDuration}ms ease`;
-        this.textarea.style.overflow = 'hidden';
+    // Initialize button state manager
+    let buttonStateManager;
+    document.addEventListener('DOMContentLoaded', () => {
+        buttonStateManager = new ButtonStateManager();
+        // Make it globally accessible
+        window.buttonStateManager = buttonStateManager;
+        // Initialize animation preferences
+        buttonStateManager.initAnimationPreferences();
+    });
 
-        // Bind event handlers
-        this.textarea.addEventListener('input', this.handleInput.bind(this));
-        this.textarea.addEventListener('keydown', this.handleKeydown.bind(this));
-        this.textarea.addEventListener('paste', this.handlePaste.bind(this));
+    // AutoResizeTextarea class for dynamic height adjustment
+    class AutoResizeTextarea {
+        constructor(textarea, options = {}) {
+            this.textarea = textarea;
+            this.minHeight = options.minHeight || 48;
+            this.maxHeight = options.maxHeight || 164;
+            this.transitionDuration = options.transitionDuration || 200;
+            this.debounceTimeout = null;
 
-        // Initial adjustment
-        this.adjustHeight();
-    }
+            this.init();
+        }
 
-    handleInput() {
-        this.debouncedAdjustHeight();
-    }
+        init() {
+            // Set initial height and styles
+            this.textarea.style.height = `${this.minHeight}px`;
+            this.textarea.style.transition = `height ${this.transitionDuration}ms ease`;
+            this.textarea.style.overflow = 'hidden';
 
-    handleKeydown(event) {
-        // Handle Enter key for immediate adjustment
-        if (event.key === 'Enter') {
-            // Small delay to allow the newline to be added
+            // Bind event handlers
+            this.textarea.addEventListener('input', this.handleInput.bind(this));
+            this.textarea.addEventListener('keydown', this.handleKeydown.bind(this));
+            this.textarea.addEventListener('paste', this.handlePaste.bind(this));
+
+            // Initial adjustment
+            this.adjustHeight();
+        }
+
+        handleInput() {
+            this.debouncedAdjustHeight();
+        }
+
+        handleKeydown(event) {
+            // Handle Enter key for immediate adjustment
+            if (event.key === 'Enter') {
+                // Small delay to allow the newline to be added
+                setTimeout(() => this.adjustHeight(), 0);
+            }
+        }
+
+        handlePaste() {
+            // Handle paste events with a small delay
             setTimeout(() => this.adjustHeight(), 0);
         }
-    }
 
-    handlePaste() {
-        // Handle paste events with a small delay
-        setTimeout(() => this.adjustHeight(), 0);
-    }
-
-    debouncedAdjustHeight() {
-        // Debounce resize operations to prevent excessive calculations
-        if (this.debounceTimeout) {
-            clearTimeout(this.debounceTimeout);
-        }
-
-        this.debounceTimeout = setTimeout(() => {
-            this.adjustHeight();
-        }, 10);
-    }
-
-    adjustHeight(reset = false) {
-        try {
-            if (reset) {
-                this.textarea.style.height = `${this.minHeight}px`;
-                return;
+        debouncedAdjustHeight() {
+            // Debounce resize operations to prevent excessive calculations
+            if (this.debounceTimeout) {
+                clearTimeout(this.debounceTimeout);
             }
 
-            // Store current scroll position
-            const scrollTop = this.textarea.scrollTop;
+            this.debounceTimeout = setTimeout(() => {
+                this.adjustHeight();
+            }, 10);
+        }
 
-            // Temporarily set height to auto to get the natural height
-            this.textarea.style.height = 'auto';
+        adjustHeight(reset = false) {
+            try {
+                if (reset) {
+                    this.textarea.style.height = `${this.minHeight}px`;
+                    return;
+                }
 
-            // Calculate the new height based on scroll height
-            const newHeight = Math.max(
-                this.minHeight,
-                Math.min(this.textarea.scrollHeight, this.maxHeight)
-            );
+                // Store current scroll position
+                const scrollTop = this.textarea.scrollTop;
 
-            // Apply the new height
-            this.textarea.style.height = `${newHeight}px`;
+                // Temporarily set height to auto to get the natural height
+                this.textarea.style.height = 'auto';
 
-            // Handle overflow when content exceeds max height
-            if (this.textarea.scrollHeight > this.maxHeight) {
-                this.textarea.style.overflow = 'auto';
-                // Restore scroll position for long content
-                this.textarea.scrollTop = scrollTop;
-            } else {
+                // Calculate the new height based on scroll height
+                const newHeight = Math.max(
+                    this.minHeight,
+                    Math.min(this.textarea.scrollHeight, this.maxHeight)
+                );
+
+                // Apply the new height
+                this.textarea.style.height = `${newHeight}px`;
+
+                // Handle overflow when content exceeds max height
+                if (this.textarea.scrollHeight > this.maxHeight) {
+                    this.textarea.style.overflow = 'auto';
+                    // Restore scroll position for long content
+                    this.textarea.scrollTop = scrollTop;
+                } else {
+                    this.textarea.style.overflow = 'hidden';
+                }
+
+                // Update button states based on content
+                this.updateButtonStates();
+
+            } catch (error) {
+                console.warn('Error in adjustHeight:', error);
+                // Fallback to minimum height on error
+                this.textarea.style.height = `${this.minHeight}px`;
                 this.textarea.style.overflow = 'hidden';
             }
-
-            // Update button states based on content
-            this.updateButtonStates();
-
-        } catch (error) {
-            console.warn('Error in adjustHeight:', error);
-            // Fallback to minimum height on error
-            this.textarea.style.height = `${this.minHeight}px`;
-            this.textarea.style.overflow = 'hidden';
         }
-    }
 
-    updateButtonStates() {
-        // Use the global button state manager if available
-        if (window.buttonStateManager) {
-            window.buttonStateManager.updateAllButtonStates();
-        } else {
-            // Fallback to direct button state management
-            const hasContent = this.textarea.value.trim().length > 0;
-            const sendButton = document.getElementById('ask-button');
+        updateButtonStates() {
+            // Use the global button state manager if available
+            if (window.buttonStateManager) {
+                window.buttonStateManager.updateAllButtonStates();
+            } else {
+                // Fallback to direct button state management
+                const hasContent = this.textarea.value.trim().length > 0;
+                const sendButton = document.getElementById('ask-button');
 
-            if (sendButton) {
-                if (hasContent) {
-                    sendButton.classList.remove('modern-button-inactive');
-                    sendButton.classList.add('modern-button-active');
-                    sendButton.setAttribute('title', 'Send message');
-                } else {
-                    sendButton.classList.remove('modern-button-active');
-                    sendButton.classList.add('modern-button-inactive');
-                    sendButton.setAttribute('title', 'Enter a message to send');
+                if (sendButton) {
+                    if (hasContent) {
+                        sendButton.classList.remove('modern-button-inactive');
+                        sendButton.classList.add('modern-button-active');
+                        sendButton.setAttribute('title', 'Send message');
+                    } else {
+                        sendButton.classList.remove('modern-button-active');
+                        sendButton.classList.add('modern-button-inactive');
+                        sendButton.setAttribute('title', 'Enter a message to send');
+                    }
                 }
             }
         }
-    }
 
-    reset() {
-        this.adjustHeight(true);
-        this.updateButtonStates();
-    }
+        reset() {
+            this.adjustHeight(true);
+            this.updateButtonStates();
+        }
 
-    destroy() {
-        // Clean up event listeners
-        this.textarea.removeEventListener('input', this.handleInput.bind(this));
-        this.textarea.removeEventListener('keydown', this.handleKeydown.bind(this));
-        this.textarea.removeEventListener('paste', this.handlePaste.bind(this));
+        destroy() {
+            // Clean up event listeners
+            this.textarea.removeEventListener('input', this.handleInput.bind(this));
+            this.textarea.removeEventListener('keydown', this.handleKeydown.bind(this));
+            this.textarea.removeEventListener('paste', this.handlePaste.bind(this));
 
-        if (this.debounceTimeout) {
-            clearTimeout(this.debounceTimeout);
+            if (this.debounceTimeout) {
+                clearTimeout(this.debounceTimeout);
+            }
         }
     }
-}
 
-// Initialize auto-resize functionality
-let autoResizeTextarea = null;
+    // Initialize auto-resize functionality
+    let autoResizeTextarea = null;
 
-function initializeAutoResize() {
-    const textarea = document.getElementById('question-input');
-    if (textarea && !autoResizeTextarea) {
-        // Add auto-resize class for styling
-        textarea.classList.add('auto-resize');
+    function initializeAutoResize() {
+        const textarea = document.getElementById('question-input');
+        if (textarea && !autoResizeTextarea) {
+            // Add auto-resize class for styling
+            textarea.classList.add('auto-resize');
 
-        autoResizeTextarea = new AutoResizeTextarea(textarea, {
-            minHeight: 48,
-            maxHeight: 164,
-            transitionDuration: 200
-        });
+            autoResizeTextarea = new AutoResizeTextarea(textarea, {
+                minHeight: 48,
+                maxHeight: 164,
+                transitionDuration: 200
+            });
+        }
     }
-}
 
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeAutoResize);
-} else {
-    initializeAutoResize();
-}
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeAutoResize);
+    } else {
+        initializeAutoResize();
+    }
 
-// Update the styles
-styleSheet.textContent += `
+    // Update the styles
+    styleSheet.textContent += `
             .active-prompt-indicator {
                 position: absolute;
                 top: 8px;
@@ -2184,112 +2227,112 @@ styleSheet.textContent += `
 }
 `;
 
-// Theme detection and management for modern input styling
-function detectAndApplyTheme() {
-    const body = document.body;
-    const documentElement = document.documentElement;
+    // Theme detection and management for modern input styling
+    function detectAndApplyTheme() {
+        const body = document.body;
+        const documentElement = document.documentElement;
 
-    // Get VS Code theme information from CSS variables or body classes
-    const computedStyle = getComputedStyle(documentElement);
-    
-    // Try multiple ways to get theme information for better accuracy
-    let backgroundColor = computedStyle.getPropertyValue('--vscode-editor-background').trim();
-    if (!backgroundColor) {
-        backgroundColor = computedStyle.getPropertyValue('--vscode-sideBar-background').trim();
-    }
-    if (!backgroundColor) {
-        backgroundColor = getComputedStyle(body).backgroundColor;
-    }
+        // Get VS Code theme information from CSS variables or body classes
+        const computedStyle = getComputedStyle(documentElement);
 
-    // Remove existing theme attributes
-    body.removeAttribute('data-vscode-theme-kind');
-    body.removeAttribute('data-vscode-theme-name');
+        // Try multiple ways to get theme information for better accuracy
+        let backgroundColor = computedStyle.getPropertyValue('--vscode-editor-background').trim();
+        if (!backgroundColor) {
+            backgroundColor = computedStyle.getPropertyValue('--vscode-sideBar-background').trim();
+        }
+        if (!backgroundColor) {
+            backgroundColor = getComputedStyle(body).backgroundColor;
+        }
 
-    // Quick check for existing VS Code theme classes first (fastest method)
-    const bodyClasses = body.className;
-    if (bodyClasses.includes('vscode-dark')) {
-        body.setAttribute('data-vscode-theme-kind', 'vscode-dark');
-        body.setAttribute('data-vscode-theme-name', 'dark');
-        return;
-    } else if (bodyClasses.includes('vscode-light')) {
-        body.setAttribute('data-vscode-theme-kind', 'vscode-light');
-        body.setAttribute('data-vscode-theme-name', 'light');
-        return;
-    } else if (bodyClasses.includes('vscode-high-contrast')) {
-        body.setAttribute('data-vscode-theme-kind', 'vscode-high-contrast');
-        body.setAttribute('data-vscode-theme-name', 'high-contrast');
-        return;
-    }
+        // Remove existing theme attributes
+        body.removeAttribute('data-vscode-theme-kind');
+        body.removeAttribute('data-vscode-theme-name');
 
-    // Check for high contrast themes via CSS variables
-    const contrastBorder = computedStyle.getPropertyValue('--vscode-contrastBorder').trim();
-    if (contrastBorder && contrastBorder !== 'transparent' && contrastBorder !== '' && contrastBorder !== 'none') {
-        body.setAttribute('data-vscode-theme-kind', 'vscode-high-contrast');
-        body.setAttribute('data-vscode-theme-name', 'high-contrast');
-        return;
-    }
+        // Quick check for existing VS Code theme classes first (fastest method)
+        const bodyClasses = body.className;
+        if (bodyClasses.includes('vscode-dark')) {
+            body.setAttribute('data-vscode-theme-kind', 'vscode-dark');
+            body.setAttribute('data-vscode-theme-name', 'dark');
+            return;
+        } else if (bodyClasses.includes('vscode-light')) {
+            body.setAttribute('data-vscode-theme-kind', 'vscode-light');
+            body.setAttribute('data-vscode-theme-name', 'light');
+            return;
+        } else if (bodyClasses.includes('vscode-high-contrast')) {
+            body.setAttribute('data-vscode-theme-kind', 'vscode-high-contrast');
+            body.setAttribute('data-vscode-theme-name', 'high-contrast');
+            return;
+        }
 
-    // Fallback: Detect theme based on background color brightness
-    if (backgroundColor) {
-        const rgb = backgroundColor.match(/\d+/g);
-        if (rgb && rgb.length >= 3) {
-            const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+        // Check for high contrast themes via CSS variables
+        const contrastBorder = computedStyle.getPropertyValue('--vscode-contrastBorder').trim();
+        if (contrastBorder && contrastBorder !== 'transparent' && contrastBorder !== '' && contrastBorder !== 'none') {
+            body.setAttribute('data-vscode-theme-kind', 'vscode-high-contrast');
+            body.setAttribute('data-vscode-theme-name', 'high-contrast');
+            return;
+        }
 
-            if (brightness < 128) {
-                body.setAttribute('data-vscode-theme-kind', 'vscode-dark');
-                body.setAttribute('data-vscode-theme-name', 'dark');
-            } else {
-                body.setAttribute('data-vscode-theme-kind', 'vscode-light');
-                body.setAttribute('data-vscode-theme-name', 'light');
+        // Fallback: Detect theme based on background color brightness
+        if (backgroundColor) {
+            const rgb = backgroundColor.match(/\d+/g);
+            if (rgb && rgb.length >= 3) {
+                const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+
+                if (brightness < 128) {
+                    body.setAttribute('data-vscode-theme-kind', 'vscode-dark');
+                    body.setAttribute('data-vscode-theme-name', 'dark');
+                } else {
+                    body.setAttribute('data-vscode-theme-kind', 'vscode-light');
+                    body.setAttribute('data-vscode-theme-name', 'light');
+                }
             }
         }
     }
-}
 
-// Apply theme detection on load
-detectAndApplyTheme();
+    // Apply theme detection on load
+    detectAndApplyTheme();
 
-// Re-apply theme detection when CSS variables change (theme switch)
-const observer = new MutationObserver((mutations) => {
-    let shouldUpdate = false;
-    mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' &&
-            (mutation.attributeName === 'class' || mutation.attributeName === 'style')) {
-            shouldUpdate = true;
+    // Re-apply theme detection when CSS variables change (theme switch)
+    const observer = new MutationObserver((mutations) => {
+        let shouldUpdate = false;
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' &&
+                (mutation.attributeName === 'class' || mutation.attributeName === 'style')) {
+                shouldUpdate = true;
+            }
+        });
+
+        if (shouldUpdate) {
+            // Use the responsive scheduling function
+            scheduleThemeCheck();
         }
     });
-    
-    if (shouldUpdate) {
-        // Use the responsive scheduling function
-        scheduleThemeCheck();
-    }
-});
 
-observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['class', 'style']
-});
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    });
 
-// Also listen for VS Code theme change events if available
-window.addEventListener('message', (event) => {
-    const message = event.data;
-    if (message.type === 'themeChanged' || message.command === 'themeChanged') {
-        // Apply theme immediately, then again after a small delay for any late-loading CSS
-        detectAndApplyTheme();
-        setTimeout(detectAndApplyTheme, 10);
-    }
-});
-
-// More responsive theme change detection using requestAnimationFrame
-let themeCheckScheduled = false;
-function scheduleThemeCheck() {
-    if (!themeCheckScheduled) {
-        themeCheckScheduled = true;
-        requestAnimationFrame(() => {
+    // Also listen for VS Code theme change events if available
+    window.addEventListener('message', (event) => {
+        const message = event.data;
+        if (message.type === 'themeChanged' || message.command === 'themeChanged') {
+            // Apply theme immediately, then again after a small delay for any late-loading CSS
             detectAndApplyTheme();
-            themeCheckScheduled = false;
-        });
+            setTimeout(detectAndApplyTheme, 10);
+        }
+    });
+
+    // More responsive theme change detection using requestAnimationFrame
+    let themeCheckScheduled = false;
+    function scheduleThemeCheck() {
+        if (!themeCheckScheduled) {
+            themeCheckScheduled = true;
+            requestAnimationFrame(() => {
+                detectAndApplyTheme();
+                themeCheckScheduled = false;
+            });
+        }
     }
-}
 
 })();

@@ -23,8 +23,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createAzure } from "@quail-ai/azure-ai-provider";
 import { extractReasoningMiddleware, wrapLanguageModel } from "ai";
 import { createOllama } from "ollama-ai-provider";
-import * as vscode from "vscode";
-import ChatGptViewProvider from "./chatgpt-view-provider";
+import CodeArtViewProvider from "./codeart-view-provider";
 import { logger } from "./logger";
 import { ModelConfig } from "./model-config";
 import { createFetchWithNetworkOptions } from "./network";
@@ -32,7 +31,7 @@ import { isReasoningModel } from "./types";
 
 // initClaudeCodeModel initializes the Claude Code model with the given parameters.
 export async function initClaudeCodeModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   // Claude Code SDK doesn't use the traditional AI SDK model interface
@@ -59,7 +58,7 @@ export async function initClaudeCodeModel(
 
 // initClaudeModel initializes the Claude model with the given parameters.
 export async function initClaudeModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   let apiBaseUrl = config.apiBaseUrl;
@@ -91,7 +90,7 @@ export async function initClaudeModel(
 
 // initGeminiModel initializes the Gemini model with the given parameters.
 export async function initGeminiModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   let apiBaseUrl = config.apiBaseUrl;
@@ -131,7 +130,7 @@ export async function initGeminiModel(
 }
 
 export async function initOllamaModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   let apiBaseUrl = config.apiBaseUrl;
@@ -167,7 +166,7 @@ export async function initOllamaModel(
 }
 
 export async function initMistralModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   let apiBaseUrl = config.apiBaseUrl;
@@ -199,7 +198,7 @@ export async function initMistralModel(
 }
 
 export async function initXAIModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   let apiBaseUrl = config.apiBaseUrl;
@@ -237,7 +236,7 @@ export async function initXAIModel(
 }
 
 export async function initTogetherModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   let apiBaseUrl = config.apiBaseUrl;
@@ -278,7 +277,7 @@ export async function initTogetherModel(
 }
 
 export async function initDeepSeekModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   let apiBaseUrl = config.apiBaseUrl;
@@ -317,7 +316,7 @@ export async function initDeepSeekModel(
 }
 
 export async function initGroqModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   let apiBaseUrl = config.apiBaseUrl;
@@ -355,7 +354,7 @@ export async function initGroqModel(
 }
 
 export async function initPerplexityModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   let apiBaseUrl = config.apiBaseUrl;
@@ -376,7 +375,7 @@ export async function initPerplexityModel(
 }
 
 export async function initOpenRouterModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   const fetchFn = createFetchWithNetworkOptions(config);
@@ -411,7 +410,7 @@ export async function initOpenRouterModel(
 }
 
 export async function initAzureAIModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   const azureAPIVersion = "2025-04-01-preview";
@@ -449,7 +448,7 @@ export async function initAzureAIModel(
 
 // TODO: pending https://github.com/vercel/ai/issues/4918 to support language model.
 export async function initReplicateModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   let apiBaseUrl = config.apiBaseUrl;

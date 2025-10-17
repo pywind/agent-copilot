@@ -1,6 +1,6 @@
 import { streamText } from "ai";
 import * as vscode from "vscode";
-import ChatGptViewProvider from "./chatgpt-view-provider";
+import CodeArtViewProvider from "./codeart-view-provider";
 import { logger } from "./logger";
 import { getHeaders } from "./model-config";
 
@@ -62,7 +62,7 @@ function computeOverlap(completion: string, afterText: string): number {
 }
 
 async function requestInlineCompletion(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   languageId: string,
   beforeText: string,
   afterText: string,
@@ -138,7 +138,7 @@ async function requestInlineCompletion(
   return undefined;
 }
 
-function buildSystemPrompt(viewProvider: ChatGptViewProvider): string | undefined {
+function buildSystemPrompt(viewProvider: CodeArtViewProvider): string | undefined {
   const parts: string[] = [];
   if (viewProvider.modelConfig?.systemPrompt) {
     parts.push(viewProvider.modelConfig.systemPrompt);
@@ -147,10 +147,9 @@ function buildSystemPrompt(viewProvider: ChatGptViewProvider): string | undefine
   return parts.join("\n\n");
 }
 
-class ChatGptInlineCompletionProvider
-  implements vscode.InlineCompletionItemProvider
-{
-  constructor(private readonly viewProvider: ChatGptViewProvider) {}
+class CodeArtInlineCompletionProvider
+  implements vscode.InlineCompletionItemProvider {
+  constructor(private readonly viewProvider: CodeArtViewProvider) { }
 
   async provideInlineCompletionItems(
     document: vscode.TextDocument,
@@ -158,7 +157,7 @@ class ChatGptInlineCompletionProvider
     _context: vscode.InlineCompletionContext,
     token: vscode.CancellationToken,
   ): Promise<vscode.InlineCompletionList | undefined> {
-    const configuration = vscode.workspace.getConfiguration("chatgpt");
+    const configuration = vscode.workspace.getConfiguration("codeart");
     const enabled = configuration.get<boolean>("inlineCompletion.enabled", true);
     if (!enabled) {
       return undefined;
@@ -231,9 +230,9 @@ class ChatGptInlineCompletionProvider
 
 export function registerInlineCompletionProvider(
   context: vscode.ExtensionContext,
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
 ): void {
-  const provider = new ChatGptInlineCompletionProvider(viewProvider);
+  const provider = new CodeArtInlineCompletionProvider(viewProvider);
   const registration = vscode.languages.registerInlineCompletionItemProvider(
     { pattern: "**/*" },
     provider,

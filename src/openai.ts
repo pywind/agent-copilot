@@ -19,7 +19,7 @@ import {
   streamText,
   wrapLanguageModel,
 } from "ai";
-import ChatGptViewProvider from "./chatgpt-view-provider";
+import CodeArtViewProvider from "./codeart-view-provider";
 import { logger } from "./logger";
 import { getHeaders, ModelConfig } from "./model-config";
 import { createFetchWithNetworkOptions } from "./network";
@@ -30,7 +30,7 @@ const azureAPIVersion = "2025-04-01-preview";
 
 // initGptModel initializes the GPT model.
 export async function initGptModel(
-  viewProvider: ChatGptViewProvider,
+  viewProvider: CodeArtViewProvider,
   config: ModelConfig,
 ) {
   const fetchFn = createFetchWithNetworkOptions(config);
@@ -103,9 +103,9 @@ export async function initGptModel(
   }
 }
 
-// chatGpt is a function that completes the chat.
-export async function chatGpt(
-  provider: ChatGptViewProvider,
+// codeArt is a function that completes the chat.
+export async function codeArt(
+  provider: CodeArtViewProvider,
   question: string,
   images: Record<string, string>,
   startResponse: () => void,
@@ -118,7 +118,7 @@ export async function chatGpt(
 
   try {
     logger.appendLine(
-      `INFO: chatgpt.model: ${provider.model} chatgpt.question: ${question.trim()}`,
+      `INFO: codeart.model: ${provider.model} codeart.question: ${question.trim()}`,
     );
 
     var chatMessage: ModelMessage = {
@@ -185,25 +185,25 @@ export async function chatGpt(
       ...(provider.provider === "Google" &&
         provider.reasoningEffort &&
         provider.reasoningEffort !== "" && {
-          providerOptions: {
-            google: {
-              thinkingConfig: {
-                thinkingBudget:
-                  provider.reasoningEffort === "low"
-                    ? 1500
-                    : provider.reasoningEffort === "medium"
-                      ? 8000
-                      : 20000,
-                includeThoughts: true,
-              },
+        providerOptions: {
+          google: {
+            thinkingConfig: {
+              thinkingBudget:
+                provider.reasoningEffort === "low"
+                  ? 1500
+                  : provider.reasoningEffort === "medium"
+                    ? 8000
+                    : 20000,
+              includeThoughts: true,
             },
           },
-        }),
+        },
+      }),
     };
-    // logger.appendLine(`INFO: chatgpt.model: ${provider.model} chatgpt.question: ${question.trim()} inputs: ${JSON.stringify(inputs, null, 2)}`);
+    // logger.appendLine(`INFO: codeart.model: ${provider.model} codeart.question: ${question.trim()} inputs: ${JSON.stringify(inputs, null, 2)}`);
     const result = streamText(inputs);
     for await (const part of result.fullStream) {
-      // logger.appendLine(`INFO: chatgpt.model: ${provider.model} chatgpt.question: ${question.trim()} response: ${JSON.stringify(part, null, 2)}`);
+      // logger.appendLine(`INFO: codeart.model: ${provider.model} codeart.question: ${question.trim()} response: ${JSON.stringify(part, null, 2)}`);
       switch (part.type) {
         case "text-delta": {
           updateResponse(part.text);
@@ -361,7 +361,7 @@ export async function chatGpt(
 
         default: {
           logger.appendLine(
-            `INFO: chatgpt.model: ${provider.model}, chatgpt.question: ${question.trim()}, debug response: ${JSON.stringify(part)}`,
+            `INFO: codeart.model: ${provider.model}, codeart.question: ${question.trim()}, debug response: ${JSON.stringify(part)}`,
           );
           break;
         }
@@ -386,11 +386,11 @@ export async function chatGpt(
     provider.chatHistory.push(assistantResponse);
 
     logger.appendLine(
-      `INFO: chatgpt.model: ${provider.model}, chatgpt.question: ${question.trim()}, final response: ${provider.response}`,
+      `INFO: codeart.model: ${provider.model}, codeart.question: ${question.trim()}, final response: ${provider.response}`,
     );
   } catch (error) {
     logger.appendLine(
-      `ERROR: chatgpt.model: ${provider.model} error: ${error}, backtrace: ${new Error().stack}`,
+      `ERROR: codeart.model: ${provider.model} error: ${error}, backtrace: ${new Error().stack}`,
     );
     provider.sendMessage({
       type: "addError",
