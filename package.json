@@ -686,6 +686,30 @@
           "maximum": 2048,
           "markdownDescription": "Maximum number of tokens generated for each inline completion.",
           "order": 159
+        },
+        "chatgpt.network.verifySsl": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Verify TLS/SSL certificates for every request sent to model providers. Disable only when required by your network environment.",
+          "order": 160
+        },
+        "chatgpt.network.proxyUrl": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Proxy URL to use for outbound requests (for example, `http://proxy.corp:8080` or `http://user:pass@proxy.corp:8080`).",
+          "order": 161
+        },
+        "chatgpt.network.proxyUsername": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Optional username for proxy authentication if not embedded in the proxy URL.",
+          "order": 162
+        },
+        "chatgpt.network.proxyPassword": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Optional password for proxy authentication if not embedded in the proxy URL. Stored in plain text settings—use workspace or environment secrets when possible.",
+          "order": 163
         }
       }
     }

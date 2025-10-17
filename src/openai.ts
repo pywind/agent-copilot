@@ -22,6 +22,7 @@ import {
 import ChatGptViewProvider from "./chatgpt-view-provider";
 import { logger } from "./logger";
 import { getHeaders, ModelConfig } from "./model-config";
+import { createFetchWithNetworkOptions } from "./network";
 import { getToolsWithWebSearch } from "./tool-utils";
 import { isOpenAIOModel, isReasoningModel } from "./types";
 
@@ -32,6 +33,7 @@ export async function initGptModel(
   viewProvider: ChatGptViewProvider,
   config: ModelConfig,
 ) {
+  const fetchFn = createFetchWithNetworkOptions(config);
   // AzureOpenAI
   if (config.apiBaseUrl?.includes("openai.azure.com")) {
     const instanceName = config.apiBaseUrl.split(".")[0].split("//")[1];
@@ -41,6 +43,7 @@ export async function initGptModel(
     const azure = createAzure({
       resourceName: instanceName,
       apiKey: config.apiKey,
+      ...(fetchFn ? { fetch: fetchFn } : {}),
       // apiVersion: azureAPIVersion,
       // fetch: fetchOpenAI, // workaround for https://github.com/vercel/ai/issues/4662
     });
@@ -70,6 +73,7 @@ export async function initGptModel(
       baseURL: config.apiBaseUrl,
       apiKey: config.apiKey,
       organization: config.organization,
+      ...(fetchFn ? { fetch: fetchFn } : {}),
       // fetch: fetchOpenAI, // workaround for https://github.com/vercel/ai/issues/4662
     });
 

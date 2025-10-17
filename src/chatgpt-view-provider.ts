@@ -761,6 +761,16 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
       const enableResponsesAPI = configuration.get(
         "gpt3.responsesAPI.enabled",
       ) as boolean;
+      const verifySsl =
+        (configuration.get("network.verifySsl") as boolean | undefined) ?? true;
+      const proxyUrl =
+        (configuration.get("network.proxyUrl") as string | undefined) ?? "";
+      const proxyUsername =
+        (configuration.get("network.proxyUsername") as string | undefined) ??
+        "";
+      const proxyPassword =
+        (configuration.get("network.proxyPassword") as string | undefined) ??
+        "";
 
       let systemPrompt = configuration.get("systemPrompt") as string;
       if (this.systemPromptOverride != "") {
@@ -846,6 +856,10 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
         isReasoning: false,
         claudeCodePath: this.claudeCodePath,
         enabledMCPServers: enabledServers,
+        verifySsl,
+        proxyUrl,
+        proxyUsername,
+        proxyPassword,
       });
       if (this.reasoningModel != "") {
         const provider = this.reasoningModelProvider;
@@ -871,6 +885,10 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
           isReasoning: true,
           claudeCodePath: this.claudeCodePath,
           enabledMCPServers: enabledServers,
+          verifySsl,
+          proxyUrl,
+          proxyUsername,
+          proxyPassword,
         });
       }
 
