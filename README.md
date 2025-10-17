@@ -22,6 +22,7 @@ ChatGPT Copilot is a powerful and telemetry-free extension for Visual Studio Cod
 - 💥 Model Context Protocol (MCP) to bring your own tools and DeepClaude (DeepSeek R1 + Claude) mode for best AI responses.
 - 📂 Chat with your Files: Add multiple files and images to your chat using `@` for seamless collaboration.
 - 📃 Streaming Answers: Receive real-time responses to your prompts in the sidebar conversation window.
+- ✨ Inline Completions: See real-time code suggestions in the editor that you can accept with Tab or Enter.
 - 📖 Prompt Manager: Chat with your own prompts (use # to search).
 - 🔥 Tool calls via prompt parsing for models that don't support native tool calling.
 - 📝 Code Assistance: Create files or fix your code with one click or keyboard shortcuts.

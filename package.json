@@ -672,6 +672,20 @@
           "default": "",
           "markdownDescription": "Absolute path for claude code CLI.",
           "order": 157
+        },
+        "chatgpt.inlineCompletion.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Enable inline code completions (real-time suggestions) from ChatGPT Copilot.",
+          "order": 158
+        },
+        "chatgpt.inlineCompletion.maxTokens": {
+          "type": "number",
+          "default": 256,
+          "minimum": 1,
+          "maximum": 2048,
+          "markdownDescription": "Maximum number of tokens generated for each inline completion.",
+          "order": 159
         }
       }
     }
