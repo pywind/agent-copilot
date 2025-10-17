@@ -172,6 +172,10 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     this.chatMode = isChatMode(storedMode) ? storedMode : "agent";
   }
 
+  private modeAllowsTools(mode: ChatMode): boolean {
+    return mode === "agent" || mode === "plan";
+  }
+
   public async closeMCPServers(): Promise<void> {
     if (this.toolSet) {
       for (const client of Object.values(this.toolSet.clients)) {
@@ -191,7 +195,10 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     this.chatMode = mode;
     await this.context.globalState.update("chatMode", mode);
 
-    if (previousMode === "agent" && mode !== "agent" && this.toolSet) {
+    const previousModeAllowsTools = this.modeAllowsTools(previousMode);
+    const nextModeAllowsTools = this.modeAllowsTools(mode);
+
+    if (previousModeAllowsTools && !nextModeAllowsTools && this.toolSet) {
       await this.closeMCPServers();
     }
 
@@ -898,8 +905,10 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
 
     // Only log and initialize MCP servers if configuration has changed and provider is not ClaudeCode
     // Claude Code has its own built-in MCP support, so we skip external MCP server initialization
+    const toolsAllowedForMode = this.modeAllowsTools(this.chatMode);
+
     if (
-      this.chatMode === "agent" &&
+      toolsAllowedForMode &&
       enabledServers.length > 0 &&
       this.aiProvider !== "ClaudeCode"
     ) {
@@ -983,9 +992,9 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     } else if (
       this.toolSet &&
       (
+        !toolsAllowedForMode ||
         enabledServers.length === 0 ||
-        this.aiProvider === "ClaudeCode" ||
-        this.chatMode !== "agent"
+        this.aiProvider === "ClaudeCode"
       )
     ) {
       // No enabled servers or using ClaudeCode provider - close any existing MCP connections

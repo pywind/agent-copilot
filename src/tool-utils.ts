@@ -20,7 +20,7 @@ import { logger } from "./logger";
  * @returns The tools object with web search tools added if applicable
  */
 export function getToolsWithWebSearch(provider: ChatGptViewProvider): any {
-  if (provider.chatMode !== "agent") {
+  if (provider.chatMode !== "agent" && provider.chatMode !== "plan") {
     return undefined;
   }
 
