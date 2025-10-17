@@ -16,6 +16,7 @@ import ChatGptViewProvider from "./chatgpt-view-provider";
 import MCPServerProvider from "./mcp-server-provider";
 import PromptManagerProvider from "./prompt-manager-provider";
 import { PromptStore } from "./types";
+import { registerInlineCompletionProvider } from "./inline-completion-provider";
 
 const menuCommands = [
   "addTests",
@@ -35,6 +36,8 @@ export async function activate(context: vscode.ExtensionContext) {
     context.globalState.get("chatgpt-adhoc-prompt") || "";
 
   const provider = new ChatGptViewProvider(context);
+
+  registerInlineCompletionProvider(context, provider);
 
   const view = vscode.window.registerWebviewViewProvider(
     "chatgpt-copilot.view",
