@@ -18,7 +18,7 @@ function getPromptBasedToolConfig(): PromptBasedToolConfig {
   return {
     enabled: true, // Always true for GitHub Copilot
     toolCallPattern: "<tool_call>",
-    maxToolCalls: configuration.get("gpt3.maxSteps") || 15,
+    maxToolCalls: configuration.get("gpt.maxSteps") || 15,
   };
 }
 

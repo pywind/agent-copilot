@@ -105,14 +105,14 @@ export async function activate(context: vscode.ExtensionContext) {
     if (e.affectsConfiguration("codeart.gpt.model")) {
       provider.model = vscode.workspace
         .getConfiguration("codeart")
-        .get("gpt3.model");
+        .get("gpt.model");
     }
 
     if (e.affectsConfiguration("codeart.gpt.customModel")) {
       if (provider.model === "custom") {
         provider.model = vscode.workspace
           .getConfiguration("codeart")
-          .get("gpt3.customModel");
+          .get("gpt.customModel");
       }
     }
 
@@ -441,10 +441,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
     menuCommands.forEach((command) => {
       if (command === "generateCode") {
-        let generateCodeEnabled = !!config.get<boolean>("gpt.generateCode-enabled");
-        const modelName = config.get("gpt.model") as string;
-        generateCodeEnabled =
-          generateCodeEnabled && modelName.startsWith("code-");
+        const enabledByMenu = enabledActions.includes(command);
+        const modelName = config.get<string>("gpt.model") || "";
+        const generateCodeEnabled =
+          enabledByMenu && modelName.startsWith("code-");
         vscode.commands.executeCommand(
           "setContext",
           "generateCode-enabled",

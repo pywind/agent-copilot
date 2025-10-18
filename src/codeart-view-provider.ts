@@ -132,24 +132,24 @@ export default class CodeArtViewProvider implements vscode.WebviewViewProvider {
       .get("response.autoScroll");
     this.model = vscode.workspace
       .getConfiguration("codeart")
-      .get("gpt3.model") as string;
+      .get("gpt.model") as string;
     if (this.model == "custom") {
       this.model = vscode.workspace
         .getConfiguration("codeart")
-        .get("gpt3.customModel") as string;
+        .get("gpt.customModel") as string;
     }
     this.reasoningEffort = vscode.workspace
       .getConfiguration("codeart")
-      .get("gpt3.reasoningEffort") as string;
+      .get("reasoningEffort") as string;
     this.provider = vscode.workspace
       .getConfiguration("codeart")
-      .get("gpt3.provider") as string;
+      .get("gpt.provider") as string;
     this.apiBaseUrl = vscode.workspace
       .getConfiguration("codeart")
-      .get("gpt3.apiBaseUrl") as string;
+      .get("gpt.apiBaseUrl") as string;
     this.maxSteps = vscode.workspace
       .getConfiguration("codeart")
-      .get("gpt3.maxSteps") as number;
+      .get("gpt.maxSteps") as number;
     this.claudeCodePath = vscode.workspace
       .getConfiguration("codeart")
       .get("gpt.claudeCodePath") as string;
@@ -1051,7 +1051,7 @@ export default class CodeArtViewProvider implements vscode.WebviewViewProvider {
     }
 
     if (this.model == "custom") {
-      this.model = configuration.get("gpt3.customModel") as string;
+      this.model = configuration.get("gpt.customModel") as string;
     }
 
     if (
@@ -1082,7 +1082,7 @@ export default class CodeArtViewProvider implements vscode.WebviewViewProvider {
         systemPrompt = this.systemPromptOverride;
       }
 
-      let apiBaseUrl = configuration.get("gpt3.apiBaseUrl") as string;
+      let apiBaseUrl = configuration.get("gpt.apiBaseUrl") as string;
       if (!apiBaseUrl && this.isOpenAIModel) {
         apiBaseUrl = "https://api.openai.com/v1";
       }

@@ -31,7 +31,7 @@ function getPromptBasedToolConfig(): PromptBasedToolConfig {
   return {
     enabled: configuration.get("promptBasedTools.enabled") || false,
     toolCallPattern: "<tool_call>",
-    maxToolCalls: configuration.get("gpt3.maxSteps") || 15,
+    maxToolCalls: configuration.get("gpt.maxSteps") || 15,
   };
 }
 
