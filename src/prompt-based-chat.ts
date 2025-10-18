@@ -11,7 +11,7 @@
 
 import { ModelMessage, stepCountIs, streamText } from "ai";
 import * as vscode from "vscode";
-import ChatGptViewProvider from "./chatgpt-view-provider";
+import CodeArtViewProvider from "./codeart-view-provider";
 import { logger } from "./logger";
 import { getHeaders } from "./model-config";
 import { getToolsWithWebSearch } from "./tool-utils";
@@ -26,21 +26,21 @@ import { isOpenAIOModel, PromptBasedToolConfig } from "./types";
  * Get prompt-based tool configuration from VSCode settings
  */
 function getPromptBasedToolConfig(): PromptBasedToolConfig {
-  const configuration = vscode.workspace.getConfiguration("chatgpt");
+  const configuration = vscode.workspace.getConfiguration("codeart");
 
   return {
     enabled: configuration.get("promptBasedTools.enabled") || false,
     toolCallPattern: "<tool_call>",
-    maxToolCalls: configuration.get("gpt3.maxSteps") || 15,
+    maxToolCalls: configuration.get("gpt.maxSteps") || 15,
   };
 }
 
 /**
- * Enhanced chatGpt function with prompt-based tool call support
+ * Enhanced codeArt function with prompt-based tool call support
  * Implements the complete tool call loop like AI SDK does automatically
  */
-export async function chatGptWithPromptTools(
-  provider: ChatGptViewProvider,
+export async function codeArtWithPromptTools(
+  provider: CodeArtViewProvider,
   question: string,
   images: Record<string, string>,
   startResponse: () => void,
@@ -53,7 +53,7 @@ export async function chatGptWithPromptTools(
 
   try {
     logger.appendLine(
-      `INFO: chatgpt.model: ${provider.model} chatgpt.question: ${question.trim()}`,
+      `INFO: codeart.model: ${provider.model} codeart.question: ${question.trim()}`,
     );
 
     const promptToolConfig = getPromptBasedToolConfig();
@@ -130,11 +130,11 @@ export async function chatGptWithPromptTools(
     }
 
     logger.appendLine(
-      `INFO: chatgpt.model: ${provider.model}, chatgpt.question: ${question.trim()}, final response: ${provider.response}`,
+      `INFO: codeart.model: ${provider.model}, codeart.question: ${question.trim()}, final response: ${provider.response}`,
     );
   } catch (error) {
     logger.appendLine(
-      `ERROR: chatgpt.model: ${provider.model} error: ${error}, backtrace: ${new Error().stack}`,
+      `ERROR: codeart.model: ${provider.model} error: ${error}, backtrace: ${new Error().stack}`,
     );
     provider.sendMessage({
       type: "addError",
@@ -148,7 +148,7 @@ export async function chatGptWithPromptTools(
  * Execute prompt-based tool loop (mimics AI SDK's automatic tool calling)
  */
 async function executePromptBasedToolLoop(
-  provider: ChatGptViewProvider,
+  provider: CodeArtViewProvider,
   systemPrompt: string,
   modelName: string,
   chunks: string[],
@@ -337,7 +337,7 @@ async function executePromptBasedToolLoop(
  * Execute standard chat with native AI SDK tools
  */
 async function executeStandardChat(
-  provider: ChatGptViewProvider,
+  provider: CodeArtViewProvider,
   systemPrompt: string,
   modelName: string,
   chunks: string[],

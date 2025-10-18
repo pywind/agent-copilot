@@ -1,20 +1,20 @@
-<h3 align="center"><img src="https://raw.githubusercontent.com/feiskyer/chatgpt-copilot/main/images/ai-logo.png" height="64"><br>An VS Code ChatGPT Copilot Extension</h3>
+<h3 align="center"><img src="https://raw.githubusercontent.com/pywind/chatgpt-copilot/main/images/ai-logo.png" height="64"><br>An VS Code CodeArt Extension</h3>
 
 <p align="center">
-    <a href="https://marketplace.visualstudio.com/items?itemName=feiskyer.chatgpt-copilot" alt="Marketplace version">
-        <img src="https://img.shields.io/visual-studio-marketplace/v/feiskyer.chatgpt-copilot?color=orange&label=VS%20Code" />
+    <a href="https://marketplace.visualstudio.com/items?itemName=pywind.chatgpt-copilot" alt="Marketplace version">
+        <img src="https://img.shields.io/visual-studio-marketplace/v/pywind.chatgpt-copilot?color=orange&label=VS%20Code" />
     </a>
-    <a href="https://marketplace.visualstudio.com/items?itemName=feiskyer.chatgpt-copilot" alt="Marketplace download count">
-        <img src="https://img.shields.io/visual-studio-marketplace/d/feiskyer.chatgpt-copilot?color=blueviolet&label=Downloads" />
+    <a href="https://marketplace.visualstudio.com/items?itemName=pywind.chatgpt-copilot" alt="Marketplace download count">
+        <img src="https://img.shields.io/visual-studio-marketplace/d/pywind.chatgpt-copilot?color=blueviolet&label=Downloads" />
     </a>
-    <a href="https://github.com/feiskyer/chatgpt-copilot" alt="Github star count">
-        <img src="https://img.shields.io/github/stars/feiskyer/chatgpt-copilot?color=blue&label=Github%20Stars" />
+    <a href="https://github.com/pywind/chatgpt-copilot" alt="Github star count">
+        <img src="https://img.shields.io/github/stars/pywind/chatgpt-copilot?color=blue&label=Github%20Stars" />
     </a>
 </p>
 
-## The Most Loved Open-Source ChatGPT Extension for VS Code
+## The Most Loved Open-Source CodeArt Extension for VS Code
 
-ChatGPT Copilot is a powerful and telemetry-free extension for Visual Studio Code, bringing the capabilities of ChatGPT directly into your coding environment.
+CodeArt is a powerful and telemetry-free extension for Visual Studio Code, bringing the capabilities of CodeArt directly into your coding environment.
 
 ## Features
 
@@ -27,8 +27,8 @@ ChatGPT Copilot is a powerful and telemetry-free extension for Visual Studio Cod
 - 🔥 Tool calls via prompt parsing for models that don't support native tool calling.
 - 📝 Code Assistance: Create files or fix your code with one click or keyboard shortcuts.
 - ➡️ Export Conversations: Export all your conversation history at once in Markdown format.
-- 📰 Custom Prompt Prefixes: Customize what you are asking ChatGPT with ad-hoc prompt prefixes.
-- 💻 Seamless Code Integration: Copy, insert, or create new files directly from ChatGPT's code suggestions.
+- 📰 Custom Prompt Prefixes: Customize what you are asking CodeArt with ad-hoc prompt prefixes.
+- 💻 Seamless Code Integration: Copy, insert, or create new files directly from CodeArt's code suggestions.
 - ➕ Editable Prompts: Edit and resend previous prompts.
 - 🛡️ Telemetry Free: No usage data is collected.
 
@@ -60,7 +60,7 @@ Chat offers specialized modes so you can choose the right workflow for every tas
 
 ## Installation
 
-- Install the extension from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=feiskyer.chatgpt-copilot) or search `ChatGPT Copilot` in VScode Extensions and click install.
+- Install the extension from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=pywind.chatgpt-copilot) or search `CodeArt` in VScode Extensions and click install.
 - Reload Visual Studio Code after installation.
 
 ## Supported Models & Providers
@@ -103,8 +103,8 @@ Refer to the following sections for more details on configuring various AI servi
 
 <summary> OpenAI </summary>
 
-> **Special notes for ChatGPT users**:
-> OpenAI API is billed separately from ChatGPT App. You need to add credits to your OpenAI for API usage [here](https://platform.openai.com/settings/organization/billing/overview). Once you add credits to your API, create a new api key and it should work.
+> **Special notes for CodeArt users**:
+> OpenAI API is billed separately from CodeArt App. You need to add credits to your OpenAI for API usage [here](https://platform.openai.com/settings/organization/billing/overview). Once you add credits to your API, create a new api key and it should work.
 
 | Configuration | Example                                |
 | ------------- | -------------------------------------- |
@@ -310,14 +310,14 @@ The extension provides various commands accessible through the Command Palette (
 
 | Command                            | Description                                 |
 | ---------------------------------- | ------------------------------------------- |
-| `ChatGPT: Ask anything`            | Open input box to ask any question          |
-| `ChatGPT: Reset session`           | Clear current conversation and start fresh  |
-| `ChatGPT: Clear conversation`      | Clear the conversation history              |
-| `ChatGPT: Export conversation`     | Export chat history to Markdown file        |
-| `ChatGPT: Manage Prompts`          | Open prompt management interface            |
-| `ChatGPT: Toggle Prompt Manager`   | Show/hide the prompt manager panel          |
+| `CodeArt: Ask anything`            | Open input box to ask any question          |
+| `CodeArt: Reset session`           | Clear current conversation and start fresh  |
+| `CodeArt: Clear conversation`      | Clear the conversation history              |
+| `CodeArt: Export conversation`     | Export chat history to Markdown file        |
+| `CodeArt: Manage Prompts`          | Open prompt management interface            |
+| `CodeArt: Toggle Prompt Manager`   | Show/hide the prompt manager panel          |
 | `Add Current File to Chat Context` | Add the currently open file to chat context |
-| `ChatGPT: Open MCP Servers`        | Manage Model Context Protocol servers       |
+| `CodeArt: Open MCP Servers`        | Manage Model Context Protocol servers       |
 
 </details>
 
@@ -368,7 +368,7 @@ The extension supports three types of MCP servers:
 
 ### **MCP Configuration**
 
-1. **Access MCP Manager**: Use `ChatGPT: Open MCP Servers` command or click the MCP icon in the sidebar
+1. **Access MCP Manager**: Use `CodeArt: Open MCP Servers` command or click the MCP icon in the sidebar
 2. **Add MCP Server**: Configure your MCP servers with:
    - **Name**: Unique identifier for the server
    - **Type**: Choose from stdio, sse, or streamable-http
@@ -433,74 +433,49 @@ When MCP servers are enabled, the extension operates in **Agent Mode**:
 
 | Setting                     | Default                     | Description                                                                                                                                         |
 | --------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chatgpt.gpt3.provider`     | `Auto`                      | AI Provider: Auto, OpenAI, Azure, AzureAI, Anthropic, GitHubCopilot, Google, Mistral, xAI, Together, DeepSeek, Groq, Perplexity, OpenRouter, Ollama |
-| `chatgpt.gpt3.apiKey`       |                             | API key for your chosen provider                                                                                                                    |
-| `chatgpt.gpt3.apiBaseUrl`   | `https://api.openai.com/v1` | API base URL for your provider                                                                                                                      |
-| `chatgpt.gpt3.model`        | `gpt-4o`                    | Model to use for conversations                                                                                                                      |
-| `chatgpt.gpt3.customModel`  |                             | Custom model name when using `custom` model option                                                                                                  |
-| `chatgpt.gpt3.organization` |                             | Organization ID (OpenAI only)                                                                                                                       |
+| `codeart.gpt.provider`     | `Auto`                      | AI Provider: Auto, OpenAI, Azure, AzureAI, Anthropic, GitHubCopilot, Google, Mistral, xAI, Together, DeepSeek, Groq, Perplexity, OpenRouter, Ollama |
+| `codeart.gpt.apiKey`       |                             | API key for your chosen provider                                                                                                                    |
+| `codeart.gpt.apiBaseUrl`   | `https://api.openai.com/v1` | API base URL for your provider                                                                                                                      |
+| `codeart.gpt.model`        | `gpt-4o`                    | Model to use for conversations                                                                                                                      |
+| `codeart.gpt.customModel`  |                             | Custom model name when using `custom` model option                                                                                                  |
+| `codeart.gpt.organization` |                             | Organization ID (OpenAI only)                                                                                                                       |
 
 ### **Model Parameters**
 
 | Setting                    | Default         | Description                                        |
 | -------------------------- | --------------- | -------------------------------------------------- |
-| `chatgpt.gpt3.maxTokens`   | `0` (unlimited) | Maximum tokens to generate in completion           |
-| `chatgpt.gpt3.temperature` | `1`             | Sampling temperature (0-2). Higher = more creative |
-| `chatgpt.gpt3.top_p`       | `1`             | Nucleus sampling parameter (0-1)                   |
-| `chatgpt.systemPrompt`     |                 | System prompt for the AI assistant                 |
+| `codeart.gpt.maxTokens`   | `0` (unlimited) | Maximum tokens to generate in completion           |
+| `codeart.gpt.temperature` | `1`             | Sampling temperature (0-2). Higher = more creative |
+| `codeart.gpt.top_p`       | `1`             | Nucleus sampling parameter (0-1)                   |
+| `codeart.systemPrompt`     |                 | System prompt for the AI assistant                 |
 
 ### **DeepClaude (Reasoning + Chat) Configuration**
 
 | Setting                               | Default                     | Description                                                                                             |
 | ------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `chatgpt.gpt3.reasoning.provider`     | `Auto`                      | Provider for reasoning model (Auto, OpenAI, Azure, AzureAI, Google, DeepSeek, Groq, OpenRouter, Ollama) |
-| `chatgpt.gpt3.reasoning.apiKey`       |                             | API key for reasoning model                                                                             |
-| `chatgpt.gpt3.reasoning.apiBaseUrl`   | `https://api.openai.com/v1` | API base URL for reasoning model                                                                        |
-| `chatgpt.gpt3.reasoning.model`        |                             | Model to use for reasoning (e.g., deepseek-reasoner, o1)                                                |
-| `chatgpt.gpt3.reasoning.organization` |                             | Organization ID for reasoning model (OpenAI only)                                                       |
 
 ### **Agent & MCP Configuration**
 
 | Setting                 | Default | Description                                         |
 | ----------------------- | ------- | --------------------------------------------------- |
-| `chatgpt.gpt3.maxSteps` | `15`    | Maximum steps for agent mode when using MCP servers |
+| `codeart.gpt.maxSteps` | `15`    | Maximum steps for agent mode when using MCP servers |
 
 ### **Feature Toggles**
 
 | Setting                                | Default | Description                                                               |
 | -------------------------------------- | ------- | ------------------------------------------------------------------------- |
-| `chatgpt.gpt3.generateCode-enabled`    | `true`  | Enable code generation context menu                                       |
-| `chatgpt.gpt3.searchGrounding.enabled` | `false` | Enable search grounding (Gemini models only)                              |
-| `chatgpt.gpt3.responsesAPI.enabled`    | `false` | Enable OpenAI Responses API. Only available for OpenAI/AzureOpenAI models |
+| `codeart.gpt.generateCode-enabled`    | `true`  | Enable code generation context menu                                       |
 
 ### **Prompt Prefixes & Context Menu**
 
 | Setting                                      | Default                                  | Description                                 |
 | -------------------------------------------- | ---------------------------------------- | ------------------------------------------- |
-| `chatgpt.promptPrefix.addTests`              | `Implement tests for the following code` | Prompt for generating unit tests            |
-| `chatgpt.promptPrefix.addTests-enabled`      | `true`                                   | Enable "Add Tests" context menu item        |
-| `chatgpt.promptPrefix.findProblems`          | `Find problems with the following code`  | Prompt for finding bugs and issues          |
-| `chatgpt.promptPrefix.findProblems-enabled`  | `true`                                   | Enable "Find Problems" context menu item    |
-| `chatgpt.promptPrefix.optimize`              | `Optimize the following code`            | Prompt for code optimization                |
-| `chatgpt.promptPrefix.optimize-enabled`      | `true`                                   | Enable "Optimize" context menu item         |
-| `chatgpt.promptPrefix.explain`               | `Explain the following code`             | Prompt for code explanation                 |
-| `chatgpt.promptPrefix.explain-enabled`       | `true`                                   | Enable "Explain" context menu item          |
-| `chatgpt.promptPrefix.addComments`           | `Add comments for the following code`    | Prompt for adding documentation             |
-| `chatgpt.promptPrefix.addComments-enabled`   | `true`                                   | Enable "Add Comments" context menu item     |
-| `chatgpt.promptPrefix.completeCode`          | `Complete the following code`            | Prompt for code completion                  |
-| `chatgpt.promptPrefix.completeCode-enabled`  | `true`                                   | Enable "Complete Code" context menu item    |
-| `chatgpt.promptPrefix.adhoc-enabled`         | `true`                                   | Enable "Ad-hoc Prompt" context menu item    |
-| `chatgpt.promptPrefix.customPrompt1`         |                                          | Your first custom prompt template           |
-| `chatgpt.promptPrefix.customPrompt1-enabled` | `false`                                  | Enable first custom prompt in context menu  |
-| `chatgpt.promptPrefix.customPrompt2`         |                                          | Your second custom prompt template          |
-| `chatgpt.promptPrefix.customPrompt2-enabled` | `false`                                  | Enable second custom prompt in context menu |
 
 ### **User Interface**
 
 | Setting                             | Default | Description                                     |
 | ----------------------------------- | ------- | ----------------------------------------------- |
-| `chatgpt.response.showNotification` | `false` | Show notification when AI responds              |
-| `chatgpt.response.autoScroll`       | `true`  | Auto-scroll to bottom when new content is added |
+| `codeart.response.autoScroll`       | `true`  | Auto-scroll to bottom when new content is added |
 
 </details>
 
@@ -520,8 +495,8 @@ We highly recommend installing the extension directly from the VS Code Marketpla
 ```sh
 npm run build
 npm run package
-code --uninstall-extension feiskyer.chatgpt-copilot
-code --install-extension chatgpt-copilot-*.vsix
+code --uninstall-extension pywind.chatgpt-copilot
+code --install-extension codeart-*.vsix
 ```
 
 </details>

@@ -11,7 +11,7 @@
  * copies or substantial portions of the Software.
  */
 import { ModelMessage, stepCountIs, streamText } from "ai";
-import ChatGptViewProvider from "./chatgpt-view-provider";
+import CodeArtViewProvider from "./codeart-view-provider";
 import { logger } from "./logger";
 import { getHeaders } from "./model-config";
 import { getToolsWithWebSearch } from "./tool-utils";
@@ -19,7 +19,7 @@ import { isOpenAIOModel } from "./types";
 
 // reasoningChat performs reasoning + chat (e.g. DeepSeek + Claude).
 export async function reasoningChat(
-  provider: ChatGptViewProvider,
+  provider: CodeArtViewProvider,
   question: string,
   images: Record<string, string>,
   startResponse: () => void,
@@ -206,20 +206,20 @@ export async function reasoningChat(
       ...(provider.provider === "Google" &&
         provider.reasoningEffort &&
         provider.reasoningEffort !== "" && {
-          providerOptions: {
-            google: {
-              thinkingConfig: {
-                thinkingBudget:
-                  provider.reasoningEffort === "low"
-                    ? 1500
-                    : provider.reasoningEffort === "medium"
-                      ? 8000
-                      : 20000,
-                includeThoughts: true,
-              },
+        providerOptions: {
+          google: {
+            thinkingConfig: {
+              thinkingBudget:
+                provider.reasoningEffort === "low"
+                  ? 1500
+                  : provider.reasoningEffort === "medium"
+                    ? 8000
+                    : 20000,
+              includeThoughts: true,
             },
           },
-        }),
+        },
+      }),
     });
     for await (const part of result.fullStream) {
       // logger.appendLine(`INFO: deepclaude.model: ${provider.model} deepclaude.question: ${question} response: ${JSON.stringify(part, null, 2)}`);

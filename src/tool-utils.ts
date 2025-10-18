@@ -11,15 +11,15 @@
 
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
-import ChatGptViewProvider from "./chatgpt-view-provider";
+import CodeArtViewProvider from "./codeart-view-provider";
 import { logger } from "./logger";
 
 /**
  * Gets tools for the provider, including web search tools when searchGrounding is enabled
- * @param provider The ChatGptViewProvider instance
+ * @param provider The CodeArtViewProvider instance
  * @returns The tools object with web search tools added if applicable
  */
-export function getToolsWithWebSearch(provider: ChatGptViewProvider): any {
+export function getToolsWithWebSearch(provider: CodeArtViewProvider): any {
   if (provider.chatMode !== "agent" && provider.chatMode !== "plan") {
     return undefined;
   }

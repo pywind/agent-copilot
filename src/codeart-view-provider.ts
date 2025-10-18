@@ -19,8 +19,8 @@ import {
 } from "@ai-sdk/openai/internal";
 import { LanguageModel as LanguageModelV2, ModelMessage } from "ai";
 import delay from "delay";
-import path from "path";
 import { promises as fs } from "fs";
+import path from "path";
 import * as vscode from "vscode";
 import { chatClaudeCode } from "./claude-code";
 import { reasoningChat } from "./deepclaude";
@@ -44,8 +44,9 @@ import { logger } from "./logger";
 import { ToolSet, createToolSet } from "./mcp";
 import { MCPServer } from "./mcp-server-provider";
 import { ModelConfig } from "./model-config";
-import { chatGpt, initGptModel } from "./openai";
+import { codeArt, initGptModel } from "./openai";
 import { chatCompletion, initGptLegacyModel } from "./openai-legacy";
+import { planModeChat } from "./plan-mode";
 import {
   CHAT_MODE_DEFINITIONS,
   CHAT_MODE_SEQUENCE,
@@ -54,7 +55,6 @@ import {
   PromptStore,
   isChatMode,
 } from "./types";
-import { planModeChat } from "./plan-mode";
 
 // Temporary compatibility type to handle LanguageModelV1 and LanguageModelV2
 type CompatibleLanguageModel =
@@ -67,7 +67,7 @@ type CompatibleLanguageModel =
     doStream: any;
   };
 
-export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
+export default class CodeArtViewProvider implements vscode.WebviewViewProvider {
   private webView?: vscode.WebviewView;
 
   public subscribeToResponse: boolean;
@@ -125,43 +125,43 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
   constructor(private context: vscode.ExtensionContext) {
     this.subscribeToResponse =
       vscode.workspace
-        .getConfiguration("chatgpt")
+        .getConfiguration("codeart")
         .get("response.showNotification") || false;
     this.autoScroll = !!vscode.workspace
-      .getConfiguration("chatgpt")
+      .getConfiguration("codeart")
       .get("response.autoScroll");
     this.model = vscode.workspace
-      .getConfiguration("chatgpt")
-      .get("gpt3.model") as string;
+      .getConfiguration("codeart")
+      .get("gpt.model") as string;
     if (this.model == "custom") {
       this.model = vscode.workspace
-        .getConfiguration("chatgpt")
-        .get("gpt3.customModel") as string;
+        .getConfiguration("codeart")
+        .get("gpt.customModel") as string;
     }
     this.reasoningEffort = vscode.workspace
-      .getConfiguration("chatgpt")
-      .get("gpt3.reasoningEffort") as string;
+      .getConfiguration("codeart")
+      .get("reasoningEffort") as string;
     this.provider = vscode.workspace
-      .getConfiguration("chatgpt")
-      .get("gpt3.provider") as string;
+      .getConfiguration("codeart")
+      .get("gpt.provider") as string;
     this.apiBaseUrl = vscode.workspace
-      .getConfiguration("chatgpt")
-      .get("gpt3.apiBaseUrl") as string;
+      .getConfiguration("codeart")
+      .get("gpt.apiBaseUrl") as string;
     this.maxSteps = vscode.workspace
-      .getConfiguration("chatgpt")
-      .get("gpt3.maxSteps") as number;
+      .getConfiguration("codeart")
+      .get("gpt.maxSteps") as number;
     this.claudeCodePath = vscode.workspace
-      .getConfiguration("chatgpt")
-      .get("gpt3.claudeCodePath") as string;
+      .getConfiguration("codeart")
+      .get("gpt.claudeCodePath") as string;
     this.reasoningModel = vscode.workspace
-      .getConfiguration("chatgpt")
-      .get("gpt3.reasoning.model") as string;
+      .getConfiguration("codeart")
+      .get("reasoning.model") as string;
     this.reasoningAPIBaseUrl = vscode.workspace
-      .getConfiguration("chatgpt")
-      .get("gpt3.reasoning.apiBaseUrl") as string;
+      .getConfiguration("codeart")
+      .get("gpt.apiBaseUrl") as string; // Use main API base URL
     this.reasoningProvider = vscode.workspace
-      .getConfiguration("chatgpt")
-      .get("gpt3.reasoning.provider") as string;
+      .getConfiguration("codeart")
+      .get("gpt.provider") as string; // Use main provider
 
     // Azure model names can't contain dots.
     if (this.apiBaseUrl?.includes("azure")) {
@@ -265,17 +265,17 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
   public sendPlanSessionUpdate(session?: PlanSession) {
     const planPayload = session
       ? {
-          id: session.id,
-          createdAt: session.createdAt,
-          task: session.task,
-          status: session.status,
-          clarifications: session.clarifications,
-          pendingClarification: session.pendingClarification,
-          planMarkdown: session.planMarkdown,
-          solverSummary: session.solverSummary,
-          toolExecutions: session.toolExecutions,
-          planFilePath: session.planFilePath,
-        }
+        id: session.id,
+        createdAt: session.createdAt,
+        task: session.task,
+        status: session.status,
+        clarifications: session.clarifications,
+        pendingClarification: session.pendingClarification,
+        planMarkdown: session.planMarkdown,
+        solverSummary: session.solverSummary,
+        toolExecutions: session.toolExecutions,
+        planFilePath: session.planFilePath,
+      }
       : undefined;
 
     this.sendMessage({
@@ -369,6 +369,47 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     });
   }
 
+  private sendAvailableModels() {
+    // Define available models grouped by provider
+    const models = [
+      // OpenAI
+      { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI" },
+      { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI" },
+      { id: "gpt-4-turbo", name: "GPT-4 Turbo", provider: "OpenAI" },
+      { id: "o1", name: "O1", provider: "OpenAI" },
+      { id: "o1-mini", name: "O1 Mini", provider: "OpenAI" },
+      { id: "o3-mini", name: "O3 Mini", provider: "OpenAI" },
+
+      // Anthropic
+      { id: "claude-sonnet-4-20250514", name: "Claude Sonnet 4", provider: "Anthropic" },
+      { id: "claude-3-7-sonnet-20250219", name: "Claude 3.7 Sonnet", provider: "Anthropic" },
+      { id: "claude-3-5-sonnet-20241022", name: "Claude 3.5 Sonnet", provider: "Anthropic" },
+      { id: "claude-3-5-haiku-20241022", name: "Claude 3.5 Haiku", provider: "Anthropic" },
+      { id: "claude-3-opus-20240229", name: "Claude 3 Opus", provider: "Anthropic" },
+
+      // Google
+      { id: "gemini-2.0-flash-exp", name: "Gemini 2.0 Flash", provider: "Google" },
+      { id: "gemini-2.0-flash-thinking-exp-01-21", name: "Gemini 2.0 Flash Thinking", provider: "Google" },
+      { id: "gemini-exp-1206", name: "Gemini Exp 1206", provider: "Google" },
+      { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", provider: "Google" },
+      { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", provider: "Google" },
+
+      // DeepSeek
+      { id: "deepseek-chat", name: "DeepSeek Chat", provider: "DeepSeek" },
+      { id: "deepseek-reasoner", name: "DeepSeek Reasoner", provider: "DeepSeek" },
+
+      // xAI
+      { id: "grok-2-latest", name: "Grok 2", provider: "xAI" },
+      { id: "grok-2-vision-latest", name: "Grok 2 Vision", provider: "xAI" },
+      { id: "grok-beta", name: "Grok Beta", provider: "xAI" },
+    ];
+
+    this.sendMessage({
+      type: "availableModels",
+      models,
+    });
+  }
+
   private modeAllowsEdits(): boolean {
     return CHAT_MODE_DEFINITIONS[this.chatMode].allowsEdits;
   }
@@ -390,7 +431,13 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
         case "addFreeTextQuestion":
-          this.sendApiRequest(data.value, { command: "freeText" });
+          this.sendApiRequest(data.value, {
+            command: "freeText",
+            turnModel: data.model // Per-turn model override
+          });
+          break;
+        case "getAvailableModels":
+          this.sendAvailableModels();
           break;
         case "setChatMode":
           if (isChatMode(data.value)) {
@@ -514,7 +561,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
         case "openSettings":
           vscode.commands.executeCommand(
             "workbench.action.openSettings",
-            "@ext:feiskyer.chatgpt-copilot chatgpt.",
+            "@ext:pywind.codeart codeart.",
           );
 
           this.logEvent("settings-opened");
@@ -522,7 +569,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
         case "openSettingsPrompt":
           vscode.commands.executeCommand(
             "workbench.action.openSettings",
-            "@ext:feiskyer.chatgpt-copilot promptPrefix",
+            "@ext:pywind.codeart promptPrefix",
           );
 
           this.logEvent("settings-prompt-opened");
@@ -569,12 +616,12 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
           break;
         case "togglePromptManager":
           await vscode.commands.executeCommand(
-            "chatgpt-copilot.togglePromptManager",
+            "codeart.togglePromptManager",
           );
           break;
         case "openMCPServers":
           await vscode.commands.executeCommand(
-            "chatgpt-copilot.openMCPServers",
+            "codeart.openMCPServers",
           );
           break;
         case "searchPrompts":
@@ -603,7 +650,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
           break;
         case "toggleMCPServers":
           await vscode.commands.executeCommand(
-            "chatgpt-copilot.openMCPServers",
+            "codeart.openMCPServers",
           );
           break;
         default:
@@ -612,6 +659,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     });
 
     this.sendModeState();
+    this.sendAvailableModels();
 
     if (this.leftOverMessage != null) {
       // If there were any messages that wasn't delivered, render after resolveWebView is called.
@@ -623,7 +671,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     this.context.subscriptions.push(
       vscode.window.onDidChangeActiveTextEditor((editor) => {
         const autoAddEnabled = vscode.workspace
-          .getConfiguration("chatgpt")
+          .getConfiguration("codeart")
           .get<boolean>("autoAddCurrentFile");
 
         if (autoAddEnabled) {
@@ -672,7 +720,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     const activeEditor = vscode.window.activeTextEditor;
     if (activeEditor) {
       const autoAddEnabled = vscode.workspace
-        .getConfiguration("chatgpt")
+        .getConfiguration("codeart")
         .get<boolean>("autoAddCurrentFile");
 
       if (autoAddEnabled) {
@@ -883,17 +931,17 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
   public async prepareConversation(modelChanged = false): Promise<boolean> {
     this.conversationId = this.conversationId || this.getRandomId();
     const state = this.context.globalState;
-    const configuration = vscode.workspace.getConfiguration("chatgpt");
-    this.model = configuration.get("gpt3.model") as string;
-    this.reasoningModel = configuration.get("gpt3.reasoning.model") as string;
+    const configuration = vscode.workspace.getConfiguration("codeart");
+    this.model = configuration.get("gpt.model") as string;
+    this.reasoningModel = configuration.get("reasoning.model") as string;
     this.reasoningAPIBaseUrl = configuration.get(
-      "gpt3.reasoning.apiBaseUrl",
-    ) as string;
-    this.provider = configuration.get("gpt3.provider") as string;
-    this.claudeCodePath = configuration.get("gpt3.claudeCodePath") as string;
+      "gpt.apiBaseUrl",
+    ) as string; // Use main API base URL
+    this.provider = configuration.get("gpt.provider") as string;
+    this.claudeCodePath = configuration.get("gpt.claudeCodePath") as string;
     this.reasoningProvider = configuration.get(
-      "gpt3.reasoning.provider",
-    ) as string;
+      "gpt.provider",
+    ) as string; // Use main provider
 
     const mcpStore = this.context.globalState.get<{ servers: MCPServer[]; }>(
       "mcpServers",
@@ -1003,7 +1051,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     }
 
     if (this.model == "custom") {
-      this.model = configuration.get("gpt3.customModel") as string;
+      this.model = configuration.get("gpt.customModel") as string;
     }
 
     if (
@@ -1018,35 +1066,23 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
       modelChanged
     ) {
       let apiKey =
-        (configuration.get("gpt3.apiKey") as string) ||
-        (state.get("chatgpt-gpt3-apiKey") as string);
-      const organization = configuration.get("gpt3.organization") as string;
-      const maxTokens = configuration.get("gpt3.maxTokens") as number;
-      const temperature = configuration.get("gpt3.temperature") as number;
-      const topP = configuration.get("gpt3.top_p") as number;
-      const searchGrounding = configuration.get(
-        "gpt3.searchGrounding.enabled",
-      ) as boolean;
-      const enableResponsesAPI = configuration.get(
-        "gpt3.responsesAPI.enabled",
-      ) as boolean;
-      const verifySsl =
-        (configuration.get("network.verifySsl") as boolean | undefined) ?? true;
-      const proxyUrl =
-        (configuration.get("network.proxyUrl") as string | undefined) ?? "";
-      const proxyUsername =
-        (configuration.get("network.proxyUsername") as string | undefined) ??
-        "";
-      const proxyPassword =
-        (configuration.get("network.proxyPassword") as string | undefined) ??
-        "";
+        (configuration.get("gpt.apiKey") as string) ||
+        (state.get("codeart-gpt3-apiKey") as string);
+      const organization = configuration.get("gpt.organization") as string;
+      const maxTokens = configuration.get("gpt.maxTokens") as number;
+      const temperature = configuration.get("gpt.temperature") as number;
+      const topP = configuration.get("gpt.top_p") as number;
+      // Auto-enable searchGrounding for Gemini models
+      const searchGrounding = this.provider === "Google" || this.model?.includes("gemini");
+      // Auto-enable responsesAPI for OpenAI models
+      const enableResponsesAPI = this.provider === "OpenAI" || this.provider === "Azure";
 
       let systemPrompt = configuration.get("systemPrompt") as string;
       if (this.systemPromptOverride != "") {
         systemPrompt = this.systemPromptOverride;
       }
 
-      let apiBaseUrl = configuration.get("gpt3.apiBaseUrl") as string;
+      let apiBaseUrl = configuration.get("gpt.apiBaseUrl") as string;
       if (!apiBaseUrl && this.isOpenAIModel) {
         apiBaseUrl = "https://api.openai.com/v1";
       }
@@ -1074,7 +1110,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
             if (choice === "Open settings") {
               vscode.commands.executeCommand(
                 "workbench.action.openSettings",
-                "chatgpt.gpt3.apiKey",
+                "codeart.gpt.apiKey",
               );
               return false;
             } else if (choice === "Store in session (Recommended)") {
@@ -1090,7 +1126,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
                 .then((value) => {
                   if (value) {
                     apiKey = value;
-                    state.update("chatgpt-gpt3-apiKey", apiKey);
+                    state.update("codeart-gpt3-apiKey", apiKey);
                     this.sendMessage(
                       {
                         type: "loginSuccessful",
@@ -1125,39 +1161,29 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
         isReasoning: false,
         claudeCodePath: this.claudeCodePath,
         enabledMCPServers: enabledServers,
-        verifySsl,
-        proxyUrl,
-        proxyUsername,
-        proxyPassword,
       });
-      if (this.reasoningModel != "") {
+      // Check if reasoning mode is enabled
+      const reasoningEnabled = configuration.get("reasoning.enabled") as boolean;
+      if (reasoningEnabled && this.reasoningModel != "") {
         const provider = this.reasoningModelProvider;
-        const organization = configuration.get(
-          "gpt3.reasoning.organization",
-        ) as string;
-        const apiBaseUrl = configuration.get(
-          "gpt3.reasoning.apiBaseUrl",
-        ) as string;
-        const apiKey = configuration.get("gpt3.reasoning.apiKey") as string;
+        // Use custom API key if provided, otherwise use main API key
+        const reasoningApiKey = configuration.get("reasoning.apiKey") as string;
+        const apiKey = reasoningApiKey || (configuration.get("gpt.apiKey") as string);
 
         this.reasoningModelConfig = new ModelConfig({
           provider,
           apiKey,
-          apiBaseUrl,
+          apiBaseUrl, // Use same base URL as main model
           maxTokens,
           temperature,
           topP,
-          organization,
+          organization, // Use same organization as main model
           systemPrompt: "",
           searchGrounding,
           enableResponsesAPI,
           isReasoning: true,
           claudeCodePath: this.claudeCodePath,
           enabledMCPServers: enabledServers,
-          verifySsl,
-          proxyUrl,
-          proxyUsername,
-          proxyPassword,
         });
       }
 
@@ -1278,6 +1304,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
       code?: string;
       previousAnswer?: string;
       language?: string;
+      turnModel?: string; // Per-turn model override
     },
   ) {
     if (this.inProgress) {
@@ -1288,12 +1315,24 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     this.questionCounter++;
 
     this.logEvent("api-request-sent", {
-      "chatgpt.command": options.command,
-      "chatgpt.hasCode": String(!!options.code),
-      "chatgpt.hasPreviousAnswer": String(!!options.previousAnswer),
+      "codeart.command": options.command,
+      "codeart.hasCode": String(!!options.code),
+      "codeart.hasPreviousAnswer": String(!!options.previousAnswer),
+      "codeart.turnModel": options.turnModel || "default",
     });
 
+    // Save current model and temporarily override if turnModel is provided
+    const savedModel = this.model;
+    if (options.turnModel) {
+      this.model = options.turnModel;
+      logger.appendLine(`INFO Using per-turn model override: ${options.turnModel}`);
+    }
+
     if (!(await this.prepareConversation())) {
+      // Restore original model on error
+      if (options.turnModel) {
+        this.model = savedModel;
+      }
       return;
     }
 
@@ -1301,9 +1340,9 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     this.reasoning = "";
     let question = this.processQuestion(prompt, options.code, options.language);
 
-    // If the ChatGPT view is not in focus/visible; focus on it to render Q&A
+    // If the CodeArt view is not in focus/visible; focus on it to render Q&A
     if (this.webView == null) {
-      vscode.commands.executeCommand("chatgpt-copilot.view.focus");
+      vscode.commands.executeCommand("codeart.view.focus");
     } else {
       this.webView?.show?.(true);
     }
@@ -1442,7 +1481,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
         );
       } else {
         // Check if we should use prompt-based tools
-        const configuration = vscode.workspace.getConfiguration("chatgpt");
+        const configuration = vscode.workspace.getConfiguration("codeart");
         const promptBasedToolsEnabled =
           configuration.get("promptBasedTools.enabled") || false;
 
@@ -1453,8 +1492,8 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
           Object.keys(this.toolSet.tools).length > 0
         ) {
           // Use prompt-based tools implementation
-          const { chatGptWithPromptTools } = require("./prompt-based-chat");
-          await chatGptWithPromptTools(
+          const { codeArtWithPromptTools } = require("./prompt-based-chat");
+          await codeArtWithPromptTools(
             this,
             question,
             imageFiles,
@@ -1464,7 +1503,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
           );
         } else {
           // Use LLM tools call
-          await chatGpt(
+          await codeArt(
             this,
             question,
             imageFiles,
@@ -1484,7 +1523,7 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
         this.response = this.response + " \r\n ```\r\n";
         vscode.window
           .showInformationMessage(
-            "It looks like ChatGPT didn't complete their answer for your coding question. You can ask it to continue and combine the answers.",
+            "It looks like CodeArt didn't complete their answer for your coding question. You can ask it to continue and combine the answers.",
             "Continue and combine answers",
           )
           .then(async (choice) => {
@@ -1511,11 +1550,11 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
       if (this.subscribeToResponse) {
         vscode.window
           .showInformationMessage(
-            "ChatGPT responded to your question.",
+            "CodeArt responded to your question.",
             "Open conversation",
           )
           .then(async () => {
-            await vscode.commands.executeCommand("chatgpt-copilot.view.focus");
+            await vscode.commands.executeCommand("codeart.view.focus");
           });
       }
     } catch (error: any) {
@@ -1535,13 +1574,13 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
 
         vscode.window
           .showErrorMessage(
-            "An error occured. If this is due to max_token you could try `ChatGPT: Clear Conversation` command and retry sending your prompt.",
+            "An error occured. If this is due to max_token you could try `CodeArt: Clear Conversation` command and retry sending your prompt.",
             "Clear conversation and retry",
           )
           .then(async (choice) => {
             if (choice === "Clear conversation and retry") {
               await vscode.commands.executeCommand(
-                "chatgpt-copilot.clearConversation",
+                "codeart.clearConversation",
               );
               await delay(250);
               this.sendApiRequest(prompt, {
@@ -1554,12 +1593,12 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
         message = `Your model: '${this.model}' may be incompatible or one of your parameters is unknown. Reset your settings to default. (HTTP 400 Bad Request)`;
       } else if (error.statusCode === 401) {
         message =
-          "Make sure you are properly signed in. If you are using Browser Auto-login method, make sure the browser is open (You could refresh the browser tab manually if you face any issues, too). If you stored your API key in settings.json, make sure it is accurate. If you stored API key in session, you can reset it with `ChatGPT: Reset session` command. (HTTP 401 Unauthorized) Potential reasons: \r\n- 1.Invalid Authentication\r\n- 2.Incorrect API key provided.\r\n- 3.Incorrect Organization provided. \r\n See https://platform.openai.com/docs/guides/error-codes for more details.";
+          "Make sure you are properly signed in. If you are using Browser Auto-login method, make sure the browser is open (You could refresh the browser tab manually if you face any issues, too). If you stored your API key in settings.json, make sure it is accurate. If you stored API key in session, you can reset it with `CodeArt: Reset session` command. (HTTP 401 Unauthorized) Potential reasons: \r\n- 1.Invalid Authentication\r\n- 2.Incorrect API key provided.\r\n- 3.Incorrect Organization provided. \r\n See https://platform.openai.com/docs/guides/error-codes for more details.";
       } else if (error.statusCode === 403) {
         message =
           "Your token has expired. Please try authenticating again. (HTTP 403 Forbidden)";
       } else if (error.statusCode === 404) {
-        message = `Your model: '${this.model}' may be incompatible or you may have exhausted your ChatGPT subscription allowance. (HTTP 404 Not Found)`;
+        message = `Your model: '${this.model}' may be incompatible or you may have exhausted your CodeArt subscription allowance. (HTTP 404 Not Found)`;
       } else if (error.statusCode === 429) {
         message =
           "Too many requests try again later. (HTTP 429 Too Many Requests) Potential reasons: \r\n 1. You exceeded your current quota, please check your plan and billing details\r\n 2. You are sending requests too quickly \r\n 3. The engine is currently overloaded, please try again later. \r\n See https://platform.openai.com/docs/guides/error-codes for more details.";
@@ -1582,6 +1621,12 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
     } finally {
       this.inProgress = false;
       this.sendMessage({ type: "showInProgress", inProgress: this.inProgress });
+
+      // Restore original model if it was temporarily overridden
+      if (options.turnModel && savedModel) {
+        this.model = savedModel;
+        logger.appendLine(`INFO Restored default model: ${savedModel}`);
+      }
     }
   }
 
@@ -1601,16 +1646,16 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
   private logEvent(eventName: string, properties?: {}): void {
     if (properties != null) {
       logger.appendLine(
-        `INFO ${eventName} chatgpt.model:${this.model} chatgpt.questionCounter:${this.questionCounter
+        `INFO ${eventName} codeart.model:${this.model} codeart.questionCounter:${this.questionCounter
         } ${JSON.stringify(properties)}`,
       );
     } else {
-      logger.appendLine(`INFO ${eventName} chatgpt.model:${this.model}`);
+      logger.appendLine(`INFO ${eventName} codeart.model:${this.model}`);
     }
   }
 
   private logError(eventName: string): void {
-    logger.appendLine(`ERR ${eventName} chatgpt.model:${this.model}`);
+    logger.appendLine(`ERR ${eventName} codeart.model:${this.model}`);
   }
 
   private getWebviewHtml(webview: vscode.Webview) {
@@ -1778,18 +1823,67 @@ export default class ChatGptViewProvider implements vscode.WebviewViewProvider {
 					</div>
 
                                         <div class="modern-input-container" role="region" aria-label="Chat input area">
-                                                <div class="mode-picker-banner" role="group" aria-label="Chat mode selector">
-                                                        <div class="mode-picker-header">
-                                                                <label for="mode-picker" class="mode-picker-label">Mode</label>
-                                                                <select id="mode-picker" class="mode-picker-select" aria-describedby="mode-description mode-warning">
-                                                                        <option value="agent">Agent</option>
-                                                                        <option value="ask">Ask</option>
-                                                                        <option value="plan">Plan</option>
-                                                                </select>
+                                                <div class="mode-selector-wrapper" role="group" aria-label="Chat mode selector">
+                                                        <div class="mode-selector-buttons">
+                                                                <button class="mode-button active" data-mode="agent" aria-label="Agent mode" title="Agent mode">
+                                                                        <div class="mode-button-content">
+                                                                                <svg class="mode-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                                        <circle cx="12" cy="12" r="3"></circle>
+                                                                                        <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l-4.2 4.2m13.2-5.2h-6m-6 0H1m13.2 5.2l-4.2-4.2m0-6L5.8 1.8"></path>
+                                                                                </svg>
+                                                                                <span class="mode-label">Agent</span>
+                                                                        </div>
+                                                                        <div class="mode-tooltip">
+                                                                                <div class="mode-tooltip-title">Agent Mode</div>
+                                                                                <div class="mode-tooltip-desc">Iterative plan-act workflow with full tool access, workspace edits, and command execution.</div>
+                                                                        </div>
+                                                                </button>
+                                                                <button class="mode-button" data-mode="ask" aria-label="Ask mode" title="Ask mode">
+                                                                        <div class="mode-button-content">
+                                                                                <svg class="mode-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                                        <circle cx="12" cy="12" r="10"></circle>
+                                                                                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m.08 4h.01"></path>
+                                                                                </svg>
+                                                                                <span class="mode-label">Ask</span>
+                                                                        </div>
+                                                                        <div class="mode-tooltip">
+                                                                                <div class="mode-tooltip-title">Ask Mode</div>
+                                                                                <div class="mode-tooltip-desc">Read-only exploration for answering questions without modifying files or running tools.</div>
+                                                                        </div>
+                                                                </button>
+                                                                <button class="mode-button" data-mode="plan" aria-label="Plan mode" title="Plan mode">
+                                                                        <div class="mode-button-content">
+                                                                                <svg class="mode-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                                        <path d="M9 5H2v7h7V5zm0 12H2v7h7v-7zm12-12h-7v7h7V5zm0 12h-7v7h7v-7z"></path>
+                                                                                </svg>
+                                                                                <span class="mode-label">Plan</span>
+                                                                        </div>
+                                                                        <div class="mode-tooltip">
+                                                                                <div class="mode-tooltip-title">Plan Mode</div>
+                                                                                <div class="mode-tooltip-desc">Up-front planning assistant that drafts multi-step implementation plans without editing files.</div>
+                                                                        </div>
+                                                                </button>
                                                         </div>
-                                                        <p id="mode-active-label" class="mode-active-label" aria-live="polite">Agent</p>
-                                                        <p id="mode-description" class="mode-description">Iterative plan-act workflow with full tool access, workspace edits, and command execution.</p>
-                                                        <p id="mode-warning" class="mode-warning hidden" role="status">Read-only mode: editing actions are disabled.</p>
+                                                        <p id="mode-warning" class="mode-warning hidden" role="status" aria-live="polite">
+                                                                <svg class="mode-warning-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                                                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                                                                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                                                </svg>
+                                                                Read-only mode: editing actions are disabled.
+                                                        </p>
+                                                </div>
+                                                <div class="model-selector-wrapper">
+                                                        <label for="turn-model-selector" class="model-selector-label">
+                                                                <svg class="model-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                                                        <path d="M16 3v4m-8-4v4"></path>
+                                                                </svg>
+                                                                Model for this turn:
+                                                        </label>
+                                                        <select id="turn-model-selector" class="model-selector" aria-label="Select model for this message">
+                                                                <option value="">Use default model</option>
+                                                        </select>
                                                 </div>
                                                 <div class="modern-input-wrapper">
                                                         <div class="modern-input-inner">

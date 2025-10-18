@@ -27,10 +27,10 @@ export class ModelConfig {
   public isReasoning: boolean;
   public claudeCodePath: string;
   public enabledMCPServers: MCPServer[];
-  public verifySsl: boolean;
   public proxyUrl: string;
   public proxyUsername: string;
   public proxyPassword: string;
+  public verifySsl: boolean;
 
   constructor({
     provider,
@@ -47,10 +47,10 @@ export class ModelConfig {
     isReasoning,
     claudeCodePath,
     enabledMCPServers,
-    verifySsl,
     proxyUrl,
     proxyUsername,
     proxyPassword,
+    verifySsl,
   }: {
     provider: string;
     apiKey: string;
@@ -66,10 +66,10 @@ export class ModelConfig {
     isReasoning?: boolean;
     claudeCodePath?: string;
     enabledMCPServers?: MCPServer[];
-    verifySsl?: boolean;
     proxyUrl?: string;
     proxyUsername?: string;
     proxyPassword?: string;
+    verifySsl?: boolean;
   }) {
     this.provider = provider;
     this.apiKey = apiKey;
@@ -85,17 +85,17 @@ export class ModelConfig {
     this.isReasoning = isReasoning ?? false;
     this.claudeCodePath = claudeCodePath ?? "";
     this.enabledMCPServers = enabledMCPServers ?? [];
-    this.verifySsl = verifySsl ?? true;
     this.proxyUrl = proxyUrl ?? "";
     this.proxyUsername = proxyUsername ?? "";
     this.proxyPassword = proxyPassword ?? "";
+    this.verifySsl = verifySsl ?? true;
   }
 }
 
 export function getHeaders() {
   return {
-    "User-Agent": "ChatGPT Copilot (VSCode Extension)",
-    "X-Title": "ChatGPT Copilot (VSCode Extension)",
-    "HTTP-Referer": "https://github.com/feiskyer/chatgpt-copilot",
+    "User-Agent": "CodeArt Copilot (VSCode Extension)",
+    "X-Title": "CodeArt Copilot (VSCode Extension)",
+    "HTTP-Referer": "https://github.com/pywind/codeart",
   };
 }

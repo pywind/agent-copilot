@@ -10,4 +10,4 @@
  */
 import * as vscode from "vscode";
 
-export const logger = vscode.window.createOutputChannel("ChatGPT Copilot");
+export const logger = vscode.window.createOutputChannel("CodeArt Copilot");

@@ -13,7 +13,7 @@ import { query, type Options } from "@anthropic-ai/claude-code";
 import { ModelMessage } from "ai";
 import * as fs from "fs";
 import * as vscode from "vscode";
-import ChatGptViewProvider from "./chatgpt-view-provider";
+import CodeArtViewProvider from "./codeart-view-provider";
 import { logger } from "./logger";
 import { MCPServer } from "./mcp-server-provider";
 
@@ -199,7 +199,7 @@ function validateMCPServerConfig(server: MCPServer): string | null {
  * Chat with Claude Code SDK
  */
 export async function chatClaudeCode(
-  provider: ChatGptViewProvider,
+  provider: CodeArtViewProvider,
   question: string,
   images: Record<string, string>,
   startResponse: () => void,
@@ -312,15 +312,15 @@ export async function chatClaudeCode(
     // Resume from previous session if valid
     ...(shouldResume &&
       provider.claudeCodeSessionId && {
-        resume: provider.claudeCodeSessionId,
-      }),
+      resume: provider.claudeCodeSessionId,
+    }),
     // The SDK will automatically find cli.js in its own directory if pathToClaudeCodeExecutable is not provided
     // Only set it if explicitly provided by the user
     ...(provider.claudeCodePath &&
       provider.claudeCodePath.trim() !== "" &&
       provider.claudeCodePath.trim() !== "claude" && {
-        pathToClaudeCodeExecutable: provider.claudeCodePath,
-      }),
+      pathToClaudeCodeExecutable: provider.claudeCodePath,
+    }),
   };
 
   try {
@@ -530,7 +530,7 @@ To fix this issue:
 
 2. **Or use local installation:**
    • Install: npm install @anthropic-ai/claude-code
-   • Set path in settings: "chatgpt.gpt3.claudeCodePath"
+   • Set path in settings: "codeart.gpt.claudeCodePath"
    • Point to: node_modules/.bin/claude
 
 3. **Verify installation:**

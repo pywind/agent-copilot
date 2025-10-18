@@ -11,12 +11,12 @@
  */
 
 import { ModelMessage, stepCountIs, streamText } from "ai";
-import * as vscode from "vscode";
-import path from "path";
-import { promises as fs } from "fs";
 import type { Stats } from "fs";
+import { promises as fs } from "fs";
+import path from "path";
 
-import ChatGptViewProvider from "./chatgpt-view-provider";
+import CodeArtViewProvider from "./codeart-view-provider";
+import { logger } from "./logger";
 import { getHeaders } from "./model-config";
 import {
   PlanClarification,
@@ -24,7 +24,6 @@ import {
   PlanToolExecution,
   isOpenAIOModel,
 } from "./types";
-import { logger } from "./logger";
 
 const ORCHESTRATOR_SYSTEM_PROMPT = `You are the 🧠 Orchestrator within a ReWOO agent. Your job is to decide whether more details are needed before planning.
 Respond **only** in JSON using one of the following structures:
@@ -87,7 +86,7 @@ function parseOrchestratorDecision(raw: string): OrchestratorDecision {
 }
 
 async function runModel(
-  provider: ChatGptViewProvider,
+  provider: CodeArtViewProvider,
   model: any,
   modelName: string,
   systemPrompt: string,
@@ -95,7 +94,7 @@ async function runModel(
   updateReasoning: (text: string, roundNumber?: number) => void,
   stageNumber: number,
   maxSteps: number,
-): Promise<{ text: string }> {
+): Promise<{ text: string; }> {
   const result = streamText({
     system: systemPrompt,
     model,
@@ -191,8 +190,7 @@ function buildSolverMessages(session: PlanSession): ModelMessage[] {
   const toolObservations = session.toolExecutions
     .map(
       (execution) =>
-        `${execution.id} ${execution.tool}[${execution.argument}] => ${
-          execution.error ? `ERROR: ${execution.error}` : execution.output
+        `${execution.id} ${execution.tool}[${execution.argument}] => ${execution.error ? `ERROR: ${execution.error}` : execution.output
         }`,
     )
     .join("\n\n");
@@ -201,9 +199,9 @@ function buildSolverMessages(session: PlanSession): ModelMessage[] {
     `Primary task:\n${session.task}`,
     session.taskHistory.length > 1
       ? `Additional user input:\n${session.taskHistory
-          .slice(1)
-          .map((entry, index) => `Update ${index + 1}: ${entry}`)
-          .join("\n")}`
+        .slice(1)
+        .map((entry, index) => `Update ${index + 1}: ${entry}`)
+        .join("\n")}`
       : "",
     clarifications ? `Clarifications:\n${clarifications}` : "Clarifications: none provided.",
     session.planMarkdown ? `Plan:\n${session.planMarkdown}` : "Plan: not available.",
@@ -238,12 +236,11 @@ function truncateOutput(value: string): string {
   if (value.length <= MAX_TOOL_OUTPUT) {
     return value;
   }
-  return `${value.slice(0, MAX_TOOL_OUTPUT)}\n... (truncated ${
-    value.length - MAX_TOOL_OUTPUT
-  } characters)`;
+  return `${value.slice(0, MAX_TOOL_OUTPUT)}\n... (truncated ${value.length - MAX_TOOL_OUTPUT
+    } characters)`;
 }
 
-async function listFiles(provider: ChatGptViewProvider, argument: string) {
+async function listFiles(provider: CodeArtViewProvider, argument: string) {
   const resolved = provider.resolveWorkspacePath(argument || ".");
   if (!resolved) {
     return "Workspace folder is not available for ListFiles.";
@@ -267,7 +264,7 @@ async function listFiles(provider: ChatGptViewProvider, argument: string) {
   }
 }
 
-async function readFile(provider: ChatGptViewProvider, argument: string) {
+async function readFile(provider: CodeArtViewProvider, argument: string) {
   const resolved = provider.resolveWorkspacePath(argument);
   if (!resolved) {
     return "Unable to resolve path for ReadFile.";
@@ -285,7 +282,7 @@ async function readFile(provider: ChatGptViewProvider, argument: string) {
   }
 }
 
-async function searchText(provider: ChatGptViewProvider, argument: string) {
+async function searchText(provider: CodeArtViewProvider, argument: string) {
   const [pattern, rawPath] = argument.split("|").map((part) => part.trim());
   if (!pattern) {
     return "SearchText requires a pattern argument.";
@@ -389,7 +386,7 @@ async function searchText(provider: ChatGptViewProvider, argument: string) {
 }
 
 async function executePlanTools(
-  provider: ChatGptViewProvider,
+  provider: CodeArtViewProvider,
   session: PlanSession,
 ): Promise<PlanToolExecution[]> {
   const executions: PlanToolExecution[] = [];
@@ -539,7 +536,7 @@ function buildFinalResponse(session: PlanSession): string {
 }
 
 export async function planModeChat(
-  provider: ChatGptViewProvider,
+  provider: CodeArtViewProvider,
   question: string,
   _images: Record<string, string>,
   startResponse: () => void,

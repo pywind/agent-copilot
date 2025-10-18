@@ -1,6 +1,6 @@
 import { ModelMessage } from "ai";
 import * as vscode from "vscode";
-import ChatGptViewProvider from "./chatgpt-view-provider";
+import CodeArtViewProvider from "./codeart-view-provider";
 import { logger } from "./logger";
 import {
   executePromptToolCall,
@@ -13,17 +13,17 @@ import { PromptBasedToolConfig } from "./types";
  * Get prompt-based tool configuration from VSCode settings
  */
 function getPromptBasedToolConfig(): PromptBasedToolConfig {
-  const configuration = vscode.workspace.getConfiguration("chatgpt");
+  const configuration = vscode.workspace.getConfiguration("codeart");
 
   return {
     enabled: true, // Always true for GitHub Copilot
     toolCallPattern: "<tool_call>",
-    maxToolCalls: configuration.get("gpt3.maxSteps") || 15,
+    maxToolCalls: configuration.get("gpt.maxSteps") || 15,
   };
 }
 
 export async function chatCopilot(
-  provider: ChatGptViewProvider,
+  provider: CodeArtViewProvider,
   question: string,
   images: Record<string, string>,
   startResponse: () => void,
@@ -31,7 +31,7 @@ export async function chatCopilot(
   updateReasoning?: (message: string, roundNumber?: number) => void,
 ) {
   logger.appendLine(
-    `INFO: chatgpt.model: ${provider.model} chatgpt.question: ${question.trim()}`,
+    `INFO: codeart.model: ${provider.model} codeart.question: ${question.trim()}`,
   );
 
   const promptToolConfig = getPromptBasedToolConfig();
@@ -137,7 +137,7 @@ export async function chatCopilot(
   }
 
   logger.appendLine(
-    `INFO: chatgpt.model: ${provider.model}, chatgpt.question: ${question.trim()}, final response: ${provider.response}`,
+    `INFO: codeart.model: ${provider.model}, codeart.question: ${question.trim()}, final response: ${provider.response}`,
   );
 }
 
@@ -145,7 +145,7 @@ export async function chatCopilot(
  * Execute GitHub Copilot tool loop (mimics AI SDK's automatic tool calling)
  */
 async function executeGitHubCopilotToolLoop(
-  provider: ChatGptViewProvider,
+  provider: CodeArtViewProvider,
   model: vscode.LanguageModelChat,
   systemPrompt: string,
   chunks: string[],
@@ -317,7 +317,7 @@ async function executeGitHubCopilotToolLoop(
  * Execute standard GitHub Copilot chat without tools
  */
 async function executeStandardGitHubCopilotChat(
-  provider: ChatGptViewProvider,
+  provider: CodeArtViewProvider,
   model: vscode.LanguageModelChat,
   systemPrompt: string,
   chunks: string[],
